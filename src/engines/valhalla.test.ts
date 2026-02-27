@@ -70,6 +70,17 @@ describe('ValhallaEngine', () => {
 
       expect(result.entries).toHaveLength(2)
       expect(result.entries[0].durationMinutes).toBe(10) // 600s / 60
+      expect(result.entries[0].distanceKm).toBe(5.0) // Valhalla returns km natively
+    })
+
+    it('throws on error response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false, status: 503, statusText: 'Service Unavailable',
+        text: async () => 'Valhalla is unavailable',
+      })
+      await expect(
+        engine.computeRouteMatrix([{ lat: 51, lon: -2 }], [{ lat: 51.1, lon: -2.1 }], 'drive')
+      ).rejects.toThrow()
     })
   })
 })

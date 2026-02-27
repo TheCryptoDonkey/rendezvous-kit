@@ -91,6 +91,7 @@ export class ValhallaEngine implements RoutingEngine {
           originIndex: oi,
           destinationIndex: di,
           durationMinutes: cell.time < 0 ? -1 : cell.time / 60,
+          // Valhalla returns distance in km (unlike ORS which returns metres)
           distanceKm: cell.distance < 0 ? -1 : cell.distance,
         })
       }
