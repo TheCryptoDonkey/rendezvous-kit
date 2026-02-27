@@ -224,7 +224,8 @@ select:focus:not(:focus-visible) { outline: none; }
   background: var(--bg-card);
   border-radius: 6px;
   border: 1px solid var(--border);
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  cursor: pointer;
 }
 
 .result-card:hover { border-color: var(--text-muted); }
@@ -236,6 +237,16 @@ select:focus:not(:focus-visible) { outline: none; }
 
 .result-card:first-child .result-rank {
   color: var(--score);
+}
+
+.result-card.selected {
+  border-color: var(--accent);
+  background: rgba(79, 195, 247, 0.08);
+  box-shadow: 0 0 10px rgba(79, 195, 247, 0.2);
+}
+
+.result-card.selected .result-rank {
+  color: var(--accent);
 }
 
 .result-rank {
@@ -407,6 +418,42 @@ footer {
 .marker-venue:hover {
   transform: scale(1.3);
   opacity: 1;
+}
+
+.marker-venue.selected {
+  opacity: 1;
+  transform: scale(1.4);
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--accent), 0 0 32px rgba(79, 195, 247, 0.4);
+  z-index: 20;
+}
+
+.marker-venue.selected .venue-label {
+  display: block;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: var(--accent);
+  color: var(--bg);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.marker-venue.selected .venue-label::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--accent);
 }
 
 /* MapLibre popup overrides */

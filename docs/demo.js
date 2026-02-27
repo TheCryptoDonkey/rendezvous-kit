@@ -49,6 +49,7 @@ function init() {
   })
 
   map.on('load', () => loadScenario('bristol'))
+  map.on('click', () => clearSelection())
 
   // Scenario picker
   document.getElementById('scenario-picker').addEventListener('change', (e) => {
@@ -59,6 +60,7 @@ function init() {
   document.getElementById('fairness-picker').addEventListener('change', (e) => {
     currentFairness = e.target.value
     if (currentScenario) {
+      clearSelection()
       displayResults()
       updateCodePanel(currentScenario)
     }
@@ -212,6 +214,12 @@ function addVenueMarkers(venues) {
     label.textContent = v.name
     el.appendChild(label)
 
+    // Click marker → highlight result card in sidebar
+    el.addEventListener('click', (e) => {
+      e.stopPropagation()
+      selectVenue(v.name)
+    })
+
     const marker = new maplibregl.Marker({ element: el })
       .setLngLat([v.lon, v.lat])
       .setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(
@@ -238,6 +246,33 @@ function updateVenueRanks() {
     const el = marker.getElement()
     el.dataset.rank = String(rank)
     el.querySelector('.venue-num').textContent = String(rank)
+  }
+}
+
+// --- Selection: map ↔ sidebar linking ---
+
+function selectVenue(name) {
+  // Highlight the result card in the sidebar
+  document.querySelectorAll('.result-card').forEach(card => {
+    card.classList.toggle('selected', card.dataset.venue === name)
+  })
+
+  // Highlight the marker on the map and fly to it
+  for (const { marker, venue } of venueMarkers) {
+    const el = marker.getElement()
+    const match = venue.name === name
+    el.classList.toggle('selected', match)
+    if (match) {
+      if (!marker.getPopup().isOpen()) marker.togglePopup()
+      map.flyTo({ center: marker.getLngLat(), zoom: Math.max(map.getZoom(), 13), duration: 600 })
+    }
+  }
+}
+
+function clearSelection() {
+  document.querySelectorAll('.result-card.selected').forEach(c => c.classList.remove('selected'))
+  for (const { marker } of venueMarkers) {
+    marker.getElement().classList.remove('selected')
   }
 }
 
@@ -321,7 +356,7 @@ function displayResults() {
 
   const list = document.getElementById('results-list')
   list.innerHTML = scored.map((v, i) => `
-    <div class="result-card">
+    <div class="result-card" data-venue="${esc(v.name)}">
       <div class="result-rank">${i + 1}</div>
       <div class="result-info">
         <div class="result-name">${esc(v.name)}</div>
@@ -334,6 +369,14 @@ function displayResults() {
       </div>
     </div>
   `).join('')
+
+  // Click result card → highlight marker on map and fly to it
+  list.querySelectorAll('.result-card[data-venue]').forEach(card => {
+    card.addEventListener('click', () => {
+      const name = card.dataset.venue
+      selectVenue(name)
+    })
+  })
 
   updateVenueRanks()
 }
