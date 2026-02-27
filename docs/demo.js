@@ -201,9 +201,20 @@ function addVenueMarkers(venues) {
     el.className = 'marker-venue'
     el.title = v.name
 
+    // Rank number
+    const num = document.createElement('span')
+    num.className = 'venue-num'
+    el.appendChild(num)
+
+    // Floating name label (visible only on #1)
+    const label = document.createElement('span')
+    label.className = 'venue-label'
+    label.textContent = v.name
+    el.appendChild(label)
+
     const marker = new maplibregl.Marker({ element: el })
       .setLngLat([v.lon, v.lat])
-      .setPopup(new maplibregl.Popup({ offset: 10 }).setHTML(
+      .setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(
         `<b>${esc(v.name)}</b><br><small>${esc(v.venueType)}</small>`,
       ))
       .addTo(map)
@@ -226,7 +237,7 @@ function updateVenueRanks() {
     const rank = rankByName.get(venue.name) ?? 99
     const el = marker.getElement()
     el.dataset.rank = String(rank)
-    el.textContent = String(rank)
+    el.querySelector('.venue-num').textContent = String(rank)
   }
 }
 
