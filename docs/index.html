@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>rendezvous-kit — Interactive Demo</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1>rendezvous-kit</h1>
+      <p class="tagline">Fair meeting points for everyone</p>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="showcase">Showcase</button>
+      <button class="tab" data-tab="interactive">Interactive</button>
+    </nav>
+    <div class="header-right">
+      <a href="https://www.npmjs.com/package/rendezvous-kit" target="_blank" rel="noopener">npm</a>
+      <a href="https://github.com/TheCryptoDonkey/rendezvous-kit" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </header>
+
+  <main>
+    <div id="map"></div>
+    <aside id="panel">
+      <section class="controls">
+        <div class="control-group">
+          <label for="scenario-picker">Scenario</label>
+          <select id="scenario-picker">
+            <option value="bristol">Bristol Meetup</option>
+            <option value="london">London Spread</option>
+            <option value="edinburgh">Edinburgh Walk</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Transport</label>
+          <div id="mode-display" class="mode-badge"></div>
+        </div>
+        <div class="control-group">
+          <label for="fairness-picker">Fairness strategy</label>
+          <select id="fairness-picker">
+            <option value="min_max">min_max</option>
+            <option value="min_total">min_total</option>
+            <option value="min_variance">min_variance</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="pipeline">
+        <h3>Pipeline</h3>
+        <div class="pipeline-steps">
+          <div class="step" id="step-isochrones">
+            <span class="step-icon">○</span>
+            <span class="step-label">Isochrones</span>
+            <span class="step-count"></span>
+          </div>
+          <div class="step" id="step-intersection">
+            <span class="step-icon">○</span>
+            <span class="step-label">Intersection</span>
+          </div>
+          <div class="step" id="step-venues">
+            <span class="step-icon">○</span>
+            <span class="step-label">Venues</span>
+            <span class="step-count"></span>
+          </div>
+          <div class="step" id="step-scored">
+            <span class="step-icon">○</span>
+            <span class="step-label">Scored</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="results">
+        <h3>Results</h3>
+        <div id="results-list"></div>
+      </section>
+    </aside>
+  </main>
+
+  <footer>
+    <details id="code-panel">
+      <summary>Show code</summary>
+      <pre><code id="code-content"></code></pre>
+    </details>
+  </footer>
+
+  <div id="interactive-overlay" class="overlay hidden">
+    <div class="overlay-content">
+      <h2>Interactive Mode</h2>
+      <p>Coming soon — Valhalla instance being set up on trotters.cc</p>
+      <p class="overlay-subtext">Explore the pre-baked scenarios in Showcase mode.</p>
+      <a href="https://github.com/TheCryptoDonkey/rendezvous-kit#engines" class="overlay-link">Self-hosting docs →</a>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script type="module" src="demo.js"></script>
+</body>
+</html>
