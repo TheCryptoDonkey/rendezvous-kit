@@ -10,6 +10,20 @@ const PROFILE: Record<TransportMode, string> = {
   public_transit: 'car', // OSRM does not support public transit; fallback to driving
 }
 
+/**
+ * OSRM routing engine adapter (route matrix only).
+ *
+ * OSRM does not support isochrone computation — calling `computeIsochrone`
+ * throws an error. Use this engine only when you need a fast route matrix
+ * and are supplying your own intersection polygon.
+ *
+ * Requires a self-hosted OSRM instance — no API key needed.
+ *
+ * @example
+ * ```typescript
+ * const engine = new OsrmEngine({ baseUrl: 'http://localhost:5000' })
+ * ```
+ */
 export class OsrmEngine implements RoutingEngine {
   readonly name = 'OSRM'
   private readonly baseUrl: string

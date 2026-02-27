@@ -9,11 +9,26 @@ const MODE_MAP: Record<TransportMode, string> = {
   public_transit: 'driving-car', // ORS doesn't support public transit; fallback to driving
 }
 
+/** Constructor options for the OpenRouteService engine adapter. */
 export interface OpenRouteServiceOptions {
+  /** ORS API key (required — obtain from https://openrouteservice.org/dev). */
   apiKey: string
+  /** Base URL override. Defaults to the public ORS API (`https://api.openrouteservice.org`). */
   baseUrl?: string
 }
 
+/**
+ * OpenRouteService routing engine adapter.
+ *
+ * Requires an API key from https://openrouteservice.org/dev.
+ * Supports isochrone computation and route matrices.
+ * Note: ORS does not support `public_transit` mode — falls back to driving.
+ *
+ * @example
+ * ```typescript
+ * const engine = new OpenRouteServiceEngine({ apiKey: 'your-key' })
+ * ```
+ */
 export class OpenRouteServiceEngine implements RoutingEngine {
   readonly name = 'OpenRouteService'
   private readonly apiKey: string
