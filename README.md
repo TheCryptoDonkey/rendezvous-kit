@@ -6,6 +6,8 @@
 [![licence](https://img.shields.io/npm/l/rendezvous-kit)](https://github.com/TheCryptoDonkey/rendezvous-kit/blob/main/LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-native-blue)
 
+**[Live Demo →](https://thecryptodonkey.github.io/rendezvous-kit)**
+
 ## Why rendezvous-kit?
 
 - **Full pipeline** — isochrone computation → polygon intersection → venue search → fairness scoring, all in one library
