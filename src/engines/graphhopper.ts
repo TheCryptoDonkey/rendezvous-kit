@@ -61,9 +61,8 @@ export class GraphHopperEngine implements RoutingEngine {
       out_arrays: ['times', 'distances'],
     }
 
-    const url = this.apiKey
-      ? `${this.baseUrl}/matrix?key=${this.apiKey}`
-      : `${this.baseUrl}/matrix`
+    const qs = this.params({})
+    const url = qs ? `${this.baseUrl}/matrix?${qs}` : `${this.baseUrl}/matrix`
 
     const res = await fetch(url, {
       method: 'POST',
