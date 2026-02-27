@@ -8,6 +8,24 @@
 
 **[Live Demo →](https://thecryptodonkey.github.io/rendezvous-kit)**
 
+### How it works
+
+```
+  Alice (London)        Bob (Bristol)        Carol (Birmingham)
+       ╲                     │                     ╱
+    isochrone            isochrone            isochrone
+       ╲                     │                     ╱
+        ╲────────── intersection ──────────╱
+                         │
+                   venue search
+                         │
+                  fairness scoring
+                         │
+                 ranked suggestions
+```
+
+Geographic midpoint tools find the centre of a triangle. **rendezvous-kit finds where everyone can actually get to** — using real road networks, travel times, and venue availability.
+
 ## Why rendezvous-kit?
 
 - **Full pipeline** — isochrone computation → polygon intersection → venue search → fairness scoring, all in one library
@@ -15,6 +33,28 @@
 - **Fairness strategies** — `min_max` (minimise worst case), `min_total` (minimise sum), `min_variance` (equalise travel times)
 - **Built on geohash-kit** — leverages our spatial primitives; only runtime dependency
 - **Zero third-party dependencies** — ships with a pure-TypeScript Sutherland–Hodgman polygon intersection, Overpass API venue search, and all engine adapters
+
+## Use Cases
+
+- **Social apps** — "Meet in the middle" features for groups of friends picking a pub, café, or restaurant
+- **Ride-sharing** — optimal pickup points that minimise detour for all passengers
+- **Event planning** — conference venues fair to attendees from multiple cities
+- **Corporate** — office locations that balance commute times across a distributed team
+- **Delivery logistics** — hub placement that minimises worst-case last-mile distances
+- **Emergency services** — staging areas reachable by multiple response units within a time budget
+
+## Compared to Alternatives
+
+| Capability | Geographic midpoint libraries | Commercial APIs (Targomo, TravelTime) | rendezvous-kit |
+|---|---|---|---|
+| Travel-time aware | No — straight-line distance only | Yes | Yes |
+| Multi-person intersection | No | Yes (API key + billing) | Yes (self-hosted, free) |
+| Fairness weighting | No | No | Yes — 3 strategies |
+| Venue search included | No | No | Yes — via Overpass API |
+| Engine-agnostic | N/A | No — vendor lock-in | Yes — 4 engines |
+| Works offline/self-hosted | N/A | No | Yes (with local Valhalla/OSRM) |
+
+rendezvous-kit is the only open-source library that combines isochrone intersection, venue discovery, and fairness scoring in a single pipeline.
 
 ## Install
 
@@ -178,6 +218,23 @@ class MyEngine implements RoutingEngine {
 ## For AI Assistants
 
 See [llms.txt](./llms.txt) for a concise API summary, or [llms-full.txt](./llms-full.txt) for the complete reference with examples.
+
+## Troubleshooting
+
+**`findRendezvous` returns an empty array**
+The participants' isochrones don't overlap — they are too far apart for the given `maxTimeMinutes`. Try increasing the time budget or switching to a faster transport mode.
+
+**No venues found (fallback to centroid)**
+The Overpass API found no matching venues within the intersection zone. This can happen in rural areas. The library returns a synthetic "Meeting point" at the area-weighted centroid as a fallback. Try broader `venueTypes` or a larger `maxTimeMinutes`.
+
+**`RangeError: findRendezvous requires at least 2 participants`**
+You must pass at least 2 participants. Single-origin use cases don't need a meeting-point library — query the routing engine directly.
+
+**Engine HTTP errors (e.g., `Valhalla isochrone error: 400`)**
+Check that your engine base URL is correct and the service is running. For ORS, verify your API key is valid. For Valhalla/OSRM, ensure the server has routing tiles loaded for the region you're querying.
+
+**OSRM: `Error: OSRM does not support isochrone computation`**
+OSRM cannot generate isochrones. Use Valhalla, OpenRouteService, or GraphHopper instead. OSRM is supported only for route matrix computation.
 
 ## Licence
 
