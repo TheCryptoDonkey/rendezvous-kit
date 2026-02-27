@@ -10,6 +10,17 @@ const COSTING: Record<TransportMode, string> = {
   public_transit: 'multimodal',
 }
 
+/**
+ * Valhalla routing engine adapter.
+ *
+ * Requires a self-hosted Valhalla instance — no API key needed.
+ * Supports isochrone computation and route matrices.
+ *
+ * @example
+ * ```typescript
+ * const engine = new ValhallaEngine({ baseUrl: 'http://localhost:8002' })
+ * ```
+ */
 export class ValhallaEngine implements RoutingEngine {
   readonly name = 'Valhalla'
   private readonly baseUrl: string

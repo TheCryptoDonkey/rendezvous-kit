@@ -10,6 +10,18 @@ const PROFILE: Record<TransportMode, string> = {
   public_transit: 'car',
 }
 
+/**
+ * GraphHopper routing engine adapter.
+ *
+ * Works with self-hosted or cloud GraphHopper instances.
+ * API key is optional for self-hosted deployments.
+ * Note: GraphHopper does not natively support `public_transit` — falls back to driving.
+ *
+ * @example
+ * ```typescript
+ * const engine = new GraphHopperEngine({ baseUrl: 'http://localhost:8989' })
+ * ```
+ */
 export class GraphHopperEngine implements RoutingEngine {
   readonly name = 'GraphHopper'
   private readonly baseUrl: string
