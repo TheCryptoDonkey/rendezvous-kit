@@ -134,7 +134,8 @@ aside#panel {
   gap: 4px;
 }
 
-.control-group label {
+.control-group label,
+.control-group-label {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -159,7 +160,8 @@ select {
 }
 
 select:hover { border-color: var(--text-muted); }
-select:focus { outline: none; border-color: var(--accent); }
+select:focus { border-color: var(--accent); }
+select:focus:not(:focus-visible) { outline: none; }
 
 .mode-badge {
   font-size: 20px;
@@ -275,6 +277,7 @@ footer {
 }
 
 #code-panel summary::-webkit-details-marker { display: none; }
+#code-panel summary::marker { display: none; }
 #code-panel summary:hover { color: var(--accent); }
 #code-panel[open] summary { border-bottom: 1px solid var(--border); }
 
