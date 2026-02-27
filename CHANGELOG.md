@@ -1,3 +1,21 @@
+# [1.9.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.8.0...v1.9.0) (2026-02-27)
+
+
+### Bug Fixes
+
+* address code review findings ([fdcb838](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/fdcb83884fb46648768e446ddfca4e36c67f0cec))
+* bump sidebar panel font sizes for readability ([c7217cc](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/c7217cc563773cd61185432aed172f3eb2f374e9))
+
+
+### Features
+
+* add Lake District scenario (cycling + terrain-irregular isochrones) ([9de3bc9](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/9de3bc9adb0f65aa4443d2f5c6d76a39bbcc2d0a))
+* add Manchester Group scenario (5 participants, tight budget, over-budget filtering) ([01e4d28](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/01e4d28258ec5c8a04e21d4d9d3b2a14098180e3))
+* add new scenario options to picker dropdown ([9dd5568](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/9dd5568aa0a9ee8a09f5fe2bcb1f44a6d40db60e))
+* add Severn Estuary scenario (concave coastline isochrones) ([9cc6607](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/9cc6607b14cc10385d2f47ed3f8b7a97aa123a74))
+* add Thames Estuary scenario (disconnected multi-component intersection) ([18eb335](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/18eb3357957e05aa6e0cd33f8ebf0faf8f2e58a7))
+* update demo.js to render multi-component intersections ([17a67af](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/17a67afe8d058df272716c73d170edfa6b5ad154))
+
 # [1.8.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.7.0...v1.8.0) (2026-02-27)
 
 
