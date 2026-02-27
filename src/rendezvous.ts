@@ -1,12 +1,13 @@
-import type { RoutingEngine, RendezvousOptions, RendezvousSuggestion, LatLon, GeoJSONPolygon } from './types.js'
+import type { RoutingEngine, RendezvousOptions, RendezvousSuggestion, LatLon } from './types.js'
 import { searchVenues } from './venues.js'
+import { intersectPolygons, centroid } from './geo.js'
 
 /**
  * Find optimal meeting points for N participants using isochrone intersection.
  *
  * Algorithm:
  * 1. Compute isochrones for each participant
- * 2. Intersect isochrone bounding boxes (simplified — full polygon intersection is deferred)
+ * 2. Intersect isochrone polygons
  * 3. Search for venues within the intersection
  * 4. Compute route matrix from all participants to all candidate venues
  * 5. Score venues by fairness strategy
@@ -27,16 +28,22 @@ export async function findRendezvous(
     participants.map(p => engine.computeIsochrone(p, mode, maxTimeMinutes))
   )
 
-  // Step 2: Intersect bounding boxes (simplified approach)
-  const intersection = intersectBBoxes(isochrones.map(iso => iso.polygon))
+  // Step 2: Intersect isochrone polygons
+  const intersection = intersectPolygons(isochrones.map(iso => iso.polygon))
   if (!intersection) {
     return [] // No overlap — participants are too far apart
   }
 
   // Step 3: Search for venues within the intersection
-  const venues = await searchVenues(intersection, venueTypes)
+  let venues = await searchVenues(intersection, venueTypes)
   if (venues.length === 0) {
-    return []
+    const c = centroid(intersection)
+    venues = [{
+      name: 'Meeting point',
+      lat: c.lat,
+      lon: c.lon,
+      venueType: 'centroid' as any,
+    }]
   }
 
   // Step 4: Compute route matrix from participants to candidate venues
@@ -80,31 +87,5 @@ function computeFairnessScore(times: number[], strategy: string): number {
     }
     default:
       return Math.max(...times)
-  }
-}
-
-function intersectBBoxes(polygons: GeoJSONPolygon[]): GeoJSONPolygon | null {
-  let south = -90, west = -180, north = 90, east = 180
-
-  for (const polygon of polygons) {
-    const coords = polygon.coordinates[0]
-    let pSouth = Infinity, pWest = Infinity, pNorth = -Infinity, pEast = -Infinity
-    for (const [lon, lat] of coords) {
-      if (lat < pSouth) pSouth = lat
-      if (lat > pNorth) pNorth = lat
-      if (lon < pWest) pWest = lon
-      if (lon > pEast) pEast = lon
-    }
-    south = Math.max(south, pSouth)
-    west = Math.max(west, pWest)
-    north = Math.min(north, pNorth)
-    east = Math.min(east, pEast)
-  }
-
-  if (south >= north || west >= east) return null
-
-  return {
-    type: 'Polygon',
-    coordinates: [[[west, south], [east, south], [east, north], [west, north], [west, south]]]
   }
 }

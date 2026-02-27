@@ -75,4 +75,27 @@ describe('findRendezvous', () => {
       })
     ).rejects.toThrow()
   })
+
+  it('returns centroid fallback when no venues found', async () => {
+    // Need to override the searchVenues mock for this test
+    const { searchVenues } = await import('./venues.js')
+    const mockSearch = vi.mocked(searchVenues)
+    mockSearch.mockResolvedValueOnce([])
+
+    const engine = createMockEngine()
+    const participants: LatLon[] = [
+      { lat: 51.4545, lon: -2.5879, label: 'Bristol' },
+      { lat: 51.3758, lon: -2.3599, label: 'Bath' },
+    ]
+
+    const result = await findRendezvous(engine, {
+      participants,
+      mode: 'drive',
+      maxTimeMinutes: 30,
+      venueTypes: ['cafe'],
+    })
+
+    expect(result).toHaveLength(1)
+    expect(result[0].venue.name).toBe('Meeting point')
+  })
 })
