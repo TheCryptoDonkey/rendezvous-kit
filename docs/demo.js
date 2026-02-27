@@ -7,8 +7,9 @@ const INTERSECTION_COLOUR = '#ffffff'
 let map
 let currentScenario = null
 let currentFairness = 'min_max'
-let markers = []
+let participantMarkers = [] // { marker, index } — linked to isochrone layers
 let venueMarkers = [] // { marker, venue } — kept separate for rank updates
+let selectedParticipant = null // index of currently highlighted participant
 let animationId = 0 // incremented on each load to cancel stale animations
 
 // --- Helpers ---
@@ -125,8 +126,9 @@ async function loadScenario(name) {
 
 function clearMap() {
   // Remove markers
-  markers.forEach(m => m.remove())
-  markers = []
+  participantMarkers.forEach(pm => pm.marker.remove())
+  participantMarkers = []
+  selectedParticipant = null
   venueMarkers.forEach(vm => vm.marker.remove())
   venueMarkers = []
 
@@ -200,7 +202,8 @@ function addParticipantMarkers(participants) {
     const el = document.createElement('div')
     el.className = 'marker-participant'
     el.style.background = colour
-    el.style.boxShadow = `0 0 8px ${colour}`
+    el.style.boxShadow = `0 0 10px ${colour}`
+    el.style.color = colour
     el.title = p.label
 
     // Permanent name label
@@ -210,11 +213,17 @@ function addParticipantMarkers(participants) {
     label.style.color = colour
     el.appendChild(label)
 
+    // Click to highlight this participant's isochrone
+    el.addEventListener('click', (e) => {
+      e.stopPropagation()
+      selectParticipant(i)
+    })
+
     const marker = new maplibregl.Marker({ element: el })
       .setLngLat([p.lon, p.lat])
       .addTo(map)
 
-    markers.push(marker)
+    participantMarkers.push({ marker, index: i })
   })
 }
 
@@ -270,6 +279,8 @@ function updateVenueRanks() {
 // --- Selection: map ↔ sidebar linking ---
 
 function selectVenue(name) {
+  clearParticipantHighlight()
+
   // Highlight the result card in the sidebar
   document.querySelectorAll('.result-card').forEach(card => {
     card.classList.toggle('selected', card.dataset.venue === name)
@@ -286,11 +297,61 @@ function selectVenue(name) {
   }
 }
 
+function selectParticipant(index) {
+  clearSelection()
+
+  // Toggle — click same participant again to deselect
+  if (selectedParticipant === index) {
+    clearParticipantHighlight()
+    return
+  }
+  selectedParticipant = index
+
+  // Highlight the marker
+  for (const pm of participantMarkers) {
+    pm.marker.getElement().classList.toggle('selected', pm.index === index)
+  }
+
+  // Brighten this participant's isochrone, dim the others
+  const s = currentScenario
+  for (let i = 0; i < s.isochrones.length; i++) {
+    const id = `demo-iso-${i}`
+    if (i === index) {
+      map.setPaintProperty(`${id}-fill`, 'fill-opacity', 0.25)
+      map.setPaintProperty(`${id}-line`, 'line-opacity', 1)
+      map.setPaintProperty(`${id}-line`, 'line-width', 3)
+    } else {
+      map.setPaintProperty(`${id}-fill`, 'fill-opacity', 0.04)
+      map.setPaintProperty(`${id}-line`, 'line-opacity', 0.3)
+      map.setPaintProperty(`${id}-line`, 'line-width', 1)
+    }
+  }
+}
+
+function clearParticipantHighlight() {
+  selectedParticipant = null
+  for (const pm of participantMarkers) {
+    pm.marker.getElement().classList.remove('selected')
+  }
+  // Restore all isochrones to default opacity
+  const s = currentScenario
+  if (!s) return
+  for (let i = 0; i < s.isochrones.length; i++) {
+    const id = `demo-iso-${i}`
+    try {
+      map.setPaintProperty(`${id}-fill`, 'fill-opacity', 0.12)
+      map.setPaintProperty(`${id}-line`, 'line-opacity', 0.8)
+      map.setPaintProperty(`${id}-line`, 'line-width', 2)
+    } catch (_) { /* layer may not exist yet during animation */ }
+  }
+}
+
 function clearSelection() {
   document.querySelectorAll('.result-card.selected').forEach(c => c.classList.remove('selected'))
   for (const { marker } of venueMarkers) {
     marker.getElement().classList.remove('selected')
   }
+  clearParticipantHighlight()
 }
 
 // --- Pipeline animation ---
