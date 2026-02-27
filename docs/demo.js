@@ -2,7 +2,7 @@
 // Uses global maplibregl from CDN script tag
 
 const COLOURS = ['#ff44ff', '#00e5ff', '#00ff88', '#ffaa00', '#aa55ff']
-const INTERSECTION_COLOUR = '#ffd700'
+const INTERSECTION_COLOUR = '#ffffff'
 
 let map
 let currentScenario = null
@@ -38,6 +38,21 @@ function computeFairness(times, strategy) {
   }
 }
 
+const FAIRNESS_DESCRIPTIONS = {
+  min_max: 'Minimise worst-case travel time',
+  min_total: 'Minimise total travel for the group',
+  min_variance: 'Equalise travel times across everyone',
+}
+
+function updateFairnessDesc() {
+  const el = document.getElementById('fairness-desc')
+  el.textContent = FAIRNESS_DESCRIPTIONS[currentFairness] ?? ''
+  el.classList.remove('flash')
+  // Force reflow to retrigger animation
+  void el.offsetWidth
+  el.classList.add('flash')
+}
+
 // --- Initialisation ---
 
 function init() {
@@ -59,6 +74,7 @@ function init() {
   // Fairness strategy picker
   document.getElementById('fairness-picker').addEventListener('change', (e) => {
     currentFairness = e.target.value
+    updateFairnessDesc()
     if (currentScenario) {
       clearSelection()
       displayResults()
@@ -163,7 +179,7 @@ function addIntersection(polygon) {
     id: `${id}-fill`,
     type: 'fill',
     source: id,
-    paint: { 'fill-color': INTERSECTION_COLOUR, 'fill-opacity': 0.2 },
+    paint: { 'fill-color': INTERSECTION_COLOUR, 'fill-opacity': 0.06 },
   })
 
   map.addLayer({
@@ -172,9 +188,8 @@ function addIntersection(polygon) {
     source: id,
     paint: {
       'line-color': INTERSECTION_COLOUR,
-      'line-width': 3,
-      'line-opacity': 0.9,
-      'line-dasharray': [2, 1],
+      'line-width': 1.5,
+      'line-opacity': 0.3,
     },
   })
 }
@@ -188,9 +203,15 @@ function addParticipantMarkers(participants) {
     el.style.boxShadow = `0 0 8px ${colour}`
     el.title = p.label
 
+    // Permanent name label
+    const label = document.createElement('span')
+    label.className = 'participant-label'
+    label.textContent = p.label
+    label.style.color = colour
+    el.appendChild(label)
+
     const marker = new maplibregl.Marker({ element: el })
       .setLngLat([p.lon, p.lat])
-      .setPopup(new maplibregl.Popup({ offset: 10 }).setHTML(`<b>${esc(p.label)}</b>`))
       .addTo(map)
 
     markers.push(marker)
@@ -222,9 +243,6 @@ function addVenueMarkers(venues) {
 
     const marker = new maplibregl.Marker({ element: el })
       .setLngLat([v.lon, v.lat])
-      .setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(
-        `<b>${esc(v.name)}</b><br><small>${esc(v.venueType)}</small>`,
-      ))
       .addTo(map)
 
     venueMarkers.push({ marker, venue: v })
@@ -263,7 +281,6 @@ function selectVenue(name) {
     const match = venue.name === name
     el.classList.toggle('selected', match)
     if (match) {
-      if (!marker.getPopup().isOpen()) marker.togglePopup()
       map.flyTo({ center: marker.getLngLat(), zoom: Math.max(map.getZoom(), 13), duration: 600 })
     }
   }
