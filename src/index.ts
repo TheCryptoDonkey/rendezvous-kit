@@ -20,6 +20,8 @@ export {
   boundingBox,
   centroid,
   polygonArea,
+  circleToPolygon,
+  getDestinationPoint,
 } from './geo.js'
 export type { BBox, Coordinate } from './geo.js'
 
