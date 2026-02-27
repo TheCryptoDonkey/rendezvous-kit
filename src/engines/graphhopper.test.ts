@@ -137,6 +137,25 @@ describe('GraphHopperEngine', () => {
         engine.computeRouteMatrix([{ lat: 51, lon: -2 }], [{ lat: 51.1, lon: -2.1 }], 'drive')
       ).rejects.toThrow('GraphHopper matrix error: 503')
     })
+
+    it('maps negative values to -1 sentinel', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          times: [[-1]],
+          distances: [[-1]],
+        }),
+      })
+
+      const result = await engine.computeRouteMatrix(
+        [{ lat: 51, lon: -2 }],
+        [{ lat: 52, lon: -1 }],
+        'drive'
+      )
+
+      expect(result.entries[0].durationMinutes).toBe(-1)
+      expect(result.entries[0].distanceKm).toBe(-1)
+    })
   })
 
   describe('API key support', () => {
