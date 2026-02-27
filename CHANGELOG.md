@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.3.0...v1.4.0) (2026-02-27)
+
+
+### Features
+
+* two-way map/sidebar venue selection ([574539a](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/574539a61166d754af526e453b291aec89fbe20e))
+
 # [1.3.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.2.0...v1.3.0) (2026-02-27)
 
 
