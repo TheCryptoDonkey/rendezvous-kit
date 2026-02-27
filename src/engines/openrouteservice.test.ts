@@ -62,6 +62,31 @@ describe('OpenRouteServiceEngine', () => {
   })
 
   describe('computeRouteMatrix', () => {
+    it('returns -1 for unreachable pairs (null from ORS)', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          durations: [[600, null], [null, 600]],
+          distances: [[5000, null], [null, 5000]],
+        }),
+      })
+
+      const origins = [{ lat: 51.45, lon: -2.59 }]
+      const destinations = [
+        { lat: 51.45, lon: -2.59 },
+        { lat: 55.0, lon: 0.0 },
+      ]
+
+      const result = await engine.computeRouteMatrix(origins, destinations, 'drive')
+
+      const reachable = result.entries.find(e => e.destinationIndex === 0)!
+      expect(reachable.durationMinutes).toBeCloseTo(10, 1) // 600s = 10min
+
+      const unreachable = result.entries.find(e => e.destinationIndex === 1)!
+      expect(unreachable.durationMinutes).toBe(-1)
+      expect(unreachable.distanceKm).toBe(-1)
+    })
+
     it('calls the ORS matrix API and returns durations', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,

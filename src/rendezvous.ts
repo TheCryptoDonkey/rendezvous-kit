@@ -1,6 +1,6 @@
-import type { RoutingEngine, RendezvousOptions, RendezvousSuggestion, LatLon } from './types.js'
+import type { RoutingEngine, RendezvousOptions, RendezvousSuggestion, LatLon, GeoJSONPolygon } from './types.js'
 import { searchVenues } from './venues.js'
-import { intersectPolygons, centroid } from './geo.js'
+import { intersectPolygonsAll, polygonArea, boundingBox } from './geo.js'
 
 /**
  * Find optimal meeting points for N participants using isochrone intersection.
@@ -28,21 +28,22 @@ export async function findRendezvous(
     participants.map(p => engine.computeIsochrone(p, mode, maxTimeMinutes))
   )
 
-  // Step 2: Intersect isochrone polygons
-  const intersection = intersectPolygons(isochrones.map(iso => iso.polygon))
-  if (!intersection) {
+  // Step 2: Intersect isochrone polygons (preserving all disconnected components)
+  const components = intersectPolygonsAll(isochrones.map(iso => iso.polygon))
+  if (components.length === 0) {
     return [] // No overlap — participants are too far apart
   }
 
-  // Step 3: Search for venues within the intersection
-  let venues = await searchVenues(intersection, venueTypes)
+  // Step 3: Search for venues across all intersection components
+  const searchRegion = components.length === 1 ? components[0] : envelopePolygon(components)
+  let venues = await searchVenues(searchRegion, venueTypes)
   if (venues.length === 0) {
-    const c = centroid(intersection)
+    const c = weightedCentroid(components)
     venues = [{
       name: 'Meeting point',
       lat: c.lat,
       lon: c.lon,
-      venueType: 'centroid' as any,
+      venueType: 'centroid',
     }]
   }
 
@@ -50,29 +51,85 @@ export async function findRendezvous(
   const venuePoints: LatLon[] = venues.map(v => ({ lat: v.lat, lon: v.lon }))
   const matrix = await engine.computeRouteMatrix(participants, venuePoints, mode)
 
-  // Step 5: Score venues
-  const suggestions: RendezvousSuggestion[] = venues.map((venue, vi) => {
+  // Step 5: Score venues (skip any with unreachable participants)
+  const suggestions: RendezvousSuggestion[] = []
+  for (let vi = 0; vi < venues.length; vi++) {
+    const venue = venues[vi]
     const travelTimes: Record<string, number> = {}
     const times: number[] = []
+    let reachable = true
 
     for (let pi = 0; pi < participants.length; pi++) {
       const entry = matrix.entries.find(
         e => e.originIndex === pi && e.destinationIndex === vi
       )
-      const duration = entry?.durationMinutes ?? Infinity
+      const duration = entry?.durationMinutes ?? -1
+      if (duration < 0 || duration > maxTimeMinutes) {
+        reachable = false
+        break
+      }
       const label = participants[pi].label ?? `participant_${pi}`
       travelTimes[label] = Math.round(duration * 10) / 10
       times.push(duration)
     }
 
-    const fairnessScore = computeFairnessScore(times, fairness)
+    if (!reachable) continue
 
-    return { venue, travelTimes, fairnessScore }
-  })
+    const fairnessScore = computeFairnessScore(times, fairness)
+    suggestions.push({ venue, travelTimes, fairnessScore })
+  }
 
   // Step 6: Sort by fairness score and return top N
   suggestions.sort((a, b) => a.fairnessScore - b.fairnessScore)
   return suggestions.slice(0, limit)
+}
+
+function envelopePolygon(polygons: GeoJSONPolygon[]): GeoJSONPolygon {
+  let minLon = Infinity, minLat = Infinity
+  let maxLon = -Infinity, maxLat = -Infinity
+  for (const p of polygons) {
+    const bb = boundingBox(p)
+    if (bb.minLon < minLon) minLon = bb.minLon
+    if (bb.minLat < minLat) minLat = bb.minLat
+    if (bb.maxLon > maxLon) maxLon = bb.maxLon
+    if (bb.maxLat > maxLat) maxLat = bb.maxLat
+  }
+  return {
+    type: 'Polygon',
+    coordinates: [[[minLon, minLat], [maxLon, minLat], [maxLon, maxLat], [minLon, maxLat], [minLon, minLat]]],
+  }
+}
+
+function weightedCentroid(polygons: GeoJSONPolygon[]): { lat: number; lon: number } {
+  let totalArea = 0
+  let sumLon = 0
+  let sumLat = 0
+  for (const p of polygons) {
+    const area = polygonArea(p)
+    const ring = p.coordinates[0]
+    const n = ring.length - 1
+    let cLon = 0, cLat = 0
+    for (let i = 0; i < n; i++) {
+      cLon += ring[i][0]
+      cLat += ring[i][1]
+    }
+    sumLon += (cLon / n) * area
+    sumLat += (cLat / n) * area
+    totalArea += area
+  }
+  if (totalArea === 0) {
+    // Fallback: unweighted average of centroids
+    let lon = 0, lat = 0
+    for (const p of polygons) {
+      const ring = p.coordinates[0]
+      const n = ring.length - 1
+      let cLon = 0, cLat = 0
+      for (let i = 0; i < n; i++) { cLon += ring[i][0]; cLat += ring[i][1] }
+      lon += cLon / n; lat += cLat / n
+    }
+    return { lon: lon / polygons.length, lat: lat / polygons.length }
+  }
+  return { lon: sumLon / totalArea, lat: sumLat / totalArea }
 }
 
 function computeFairnessScore(times: number[], strategy: string): number {

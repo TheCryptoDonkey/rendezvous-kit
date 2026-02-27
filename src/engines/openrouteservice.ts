@@ -50,6 +50,10 @@ export class OpenRouteServiceEngine implements RoutingEngine {
       features: Array<{ geometry: { type: 'Polygon'; coordinates: number[][][] } }>
     }
 
+    if (!data.features?.length) {
+      throw new Error('ORS returned no isochrone features')
+    }
+
     return {
       origin,
       mode,
@@ -83,18 +87,20 @@ export class OpenRouteServiceEngine implements RoutingEngine {
     }
 
     const data = await response.json() as {
-      durations: number[][]
-      distances: number[][]
+      durations: (number | null)[][]
+      distances: (number | null)[][]
     }
 
     const entries = []
     for (let oi = 0; oi < origins.length; oi++) {
       for (let di = 0; di < destinations.length; di++) {
+        const dur = data.durations[oi][di]
+        const dist = data.distances[oi][di]
         entries.push({
           originIndex: oi,
           destinationIndex: di,
-          durationMinutes: data.durations[oi][di] / 60,
-          distanceKm: data.distances[oi][di] / 1000,
+          durationMinutes: dur == null || dur < 0 ? -1 : dur / 60,
+          distanceKm: dist == null || dist < 0 ? -1 : dist / 1000,
         })
       }
     }

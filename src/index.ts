@@ -17,6 +17,7 @@ export type {
 // Geometry
 export {
   intersectPolygons,
+  intersectPolygonsAll,
   boundingBox,
   centroid,
   polygonArea,

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   intersectPolygons,
+  intersectPolygonsAll,
   boundingBox,
   centroid,
   polygonArea,
@@ -80,6 +81,88 @@ describe('intersectPolygons', () => {
     expect(intersectPolygons([])).toBeNull()
   })
 
+  it('correctly intersects a large square with a concave L-shape', () => {
+    // The L-shape is fully inside squareA, so intersection should equal the L-shape
+    const bigSquare: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-1, -1], [12, -1], [12, 12], [-1, 12], [-1, -1]]],
+    }
+    const result = intersectPolygons([bigSquare, lShape])
+    expect(result).not.toBeNull()
+
+    // The L-shape area should be preserved (75 sq units: 10×5 bottom + 5×5 left arm)
+    // The intersection must NOT collapse to a smaller rectangle
+    const lArea = polygonArea(lShape)
+    const resultArea = polygonArea(result!)
+    expect(resultArea).toBeCloseTo(lArea, -2)
+  })
+
+  it('correctly intersects two concave polygons', () => {
+    // Two overlapping L-shapes — tests concave ∩ concave
+    const lShape2: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[3, 0], [10, 0], [10, 10], [5, 10], [5, 5], [3, 5], [3, 0]]],
+    }
+    const result = intersectPolygons([lShape, lShape2])
+    expect(result).not.toBeNull()
+
+    // Intersection should be two rectangular regions:
+    // Bottom overlap: x=[3,10], y=[0,5] → area 35
+    // Left arm overlap: x=[5,5], y=[5,5] → just the corner point at (5,5)
+    // Actually: lShape is [0,0]→[10,0]→[10,5]→[5,5]→[5,10]→[0,10]
+    //           lShape2 is [3,0]→[10,0]→[10,10]→[5,10]→[5,5]→[3,5]
+    // The overlap is the rectangle [3,0]→[10,0]→[10,5]→[3,5] = 7×5 = 35 sq units
+    const resultArea = polygonArea(result!)
+    // Approximate check — polygon area uses metres, so check relative size
+    const fullLArea = polygonArea(lShape)
+    // Overlap should be about 35/75 = 46.7% of the L-shape
+    expect(resultArea / fullLArea).toBeCloseTo(35 / 75, 1)
+  })
+
+  it('returns largest component for disconnected concave intersection', () => {
+    // Two C-shapes with asymmetric bars — intersection is two disconnected rectangles
+    // of different sizes, so we can verify the largest is returned.
+    //
+    // Shape A: C with thick bottom bar (y=[0,7]) and thin top bar (y=[8,10])
+    //          notch at x=[2,8], y=[7,8]
+    const cShapeA: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [8, 0], [8, 7], [2, 7], [2, 8], [8, 8], [8, 10], [0, 10], [0, 0]]],
+    }
+    // Shape B: mirror C — same notch so intersection splits
+    // Vertices start from top-left so triangulation processes top region first,
+    // ensuring mergePieces encounters the smaller component first
+    const cShapeB: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[2, 10], [2, 8], [8, 8], [8, 7], [2, 7], [2, 0], [10, 0], [10, 10], [2, 10]]],
+    }
+
+    // True intersection: bottom [2,8]×[0,7] = area 42, top [2,8]×[8,10] = area 12
+    const result = intersectPolygons([cShapeA, cShapeB])
+    expect(result).not.toBeNull()
+
+    const resultArea = polygonArea(result!)
+    const largeComponent = polygonArea({
+      type: 'Polygon',
+      coordinates: [[[2, 0], [8, 0], [8, 7], [2, 7], [2, 0]]],
+    })
+    const smallComponent = polygonArea({
+      type: 'Polygon',
+      coordinates: [[[2, 8], [8, 8], [8, 10], [2, 10], [2, 8]]],
+    })
+
+    // Must return the larger component (area ≈ 42), not the smaller (area ≈ 12)
+    expect(resultArea / largeComponent).toBeCloseTo(1.0, 1)
+    expect(resultArea).toBeGreaterThan(smallComponent * 2)
+
+    // Result should be a valid polygon (no duplicate vertices, properly closed)
+    const ring = result!.coordinates[0]
+    expect(ring.length).toBeGreaterThanOrEqual(5) // 4 vertices + closing
+    // First and last coordinate must match (closed ring)
+    expect(ring[0][0]).toBeCloseTo(ring[ring.length - 1][0], 8)
+    expect(ring[0][1]).toBeCloseTo(ring[ring.length - 1][1], 8)
+  })
+
   it('handles three overlapping polygons', () => {
     const squareC: GeoJSONPolygon = {
       type: 'Polygon',
@@ -91,6 +174,104 @@ describe('intersectPolygons', () => {
     const c = centroid(result!)
     expect(c.lon).toBeCloseTo(6.5, 1)
     expect(c.lat).toBeCloseTo(6.5, 1)
+  })
+})
+
+describe('intersectPolygonsAll', () => {
+  it('returns empty array for empty input', () => {
+    expect(intersectPolygonsAll([])).toEqual([])
+  })
+
+  it('returns single-element array for single polygon', () => {
+    const result = intersectPolygonsAll([squareA])
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual(squareA)
+  })
+
+  it('returns 1 component for two overlapping squares', () => {
+    const result = intersectPolygonsAll([squareA, squareB])
+    expect(result).toHaveLength(1)
+    expect(result[0].type).toBe('Polygon')
+    const c = centroid(result[0])
+    expect(c.lon).toBeCloseTo(7.5, 1)
+    expect(c.lat).toBeCloseTo(7.5, 1)
+  })
+
+  it('returns empty array for non-overlapping polygons', () => {
+    const far: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[100, 100], [110, 100], [110, 110], [100, 110], [100, 100]]],
+    }
+    expect(intersectPolygonsAll([squareA, far])).toEqual([])
+  })
+
+  it('returns 2 components for two C-shapes with disconnected intersection', () => {
+    // Two C-shapes with asymmetric bars — intersection is two disconnected rectangles
+    const cShapeA: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [8, 0], [8, 7], [2, 7], [2, 8], [8, 8], [8, 10], [0, 10], [0, 0]]],
+    }
+    const cShapeB: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[2, 10], [2, 8], [8, 8], [8, 7], [2, 7], [2, 0], [10, 0], [10, 10], [2, 10]]],
+    }
+
+    const result = intersectPolygonsAll([cShapeA, cShapeB])
+    expect(result.length).toBe(2)
+
+    // Both components should be valid closed polygons
+    for (const component of result) {
+      expect(component.type).toBe('Polygon')
+      const ring = component.coordinates[0]
+      expect(ring.length).toBeGreaterThanOrEqual(5) // at least 4 vertices + closing
+      expect(ring[0][0]).toBeCloseTo(ring[ring.length - 1][0], 8)
+      expect(ring[0][1]).toBeCloseTo(ring[ring.length - 1][1], 8)
+    }
+
+    // Total area should be approximately 42 + 12 = 54 (bottom 6×7 + top 6×2)
+    const areas = result.map(p => polygonArea(p)).sort((a, b) => b - a)
+    const largeExpected = polygonArea({
+      type: 'Polygon',
+      coordinates: [[[2, 0], [8, 0], [8, 7], [2, 7], [2, 0]]],
+    })
+    const smallExpected = polygonArea({
+      type: 'Polygon',
+      coordinates: [[[2, 8], [8, 8], [8, 10], [2, 10], [2, 8]]],
+    })
+    expect(areas[0] / largeExpected).toBeCloseTo(1.0, 1)
+    expect(areas[1] / smallExpected).toBeCloseTo(1.0, 1)
+  })
+
+  it('returns 1 component for three overlapping squares', () => {
+    const squareC: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[3, 3], [8, 3], [8, 8], [3, 8], [3, 3]]],
+    }
+    const result = intersectPolygonsAll([squareA, squareB, squareC])
+    expect(result).toHaveLength(1)
+    const c = centroid(result[0])
+    expect(c.lon).toBeCloseTo(6.5, 1)
+    expect(c.lat).toBeCloseTo(6.5, 1)
+  })
+
+  it('all returned components are valid closed polygons', () => {
+    const cShapeA: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [8, 0], [8, 7], [2, 7], [2, 8], [8, 8], [8, 10], [0, 10], [0, 0]]],
+    }
+    const cShapeB: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[2, 10], [2, 8], [8, 8], [8, 7], [2, 7], [2, 0], [10, 0], [10, 10], [2, 10]]],
+    }
+    const result = intersectPolygonsAll([cShapeA, cShapeB])
+    for (const component of result) {
+      expect(component.type).toBe('Polygon')
+      expect(component.coordinates).toHaveLength(1)
+      const ring = component.coordinates[0]
+      expect(ring.length).toBeGreaterThanOrEqual(4) // min 3 vertices + closing
+      // First and last must match (closed ring)
+      expect(ring[0]).toEqual(ring[ring.length - 1])
+    }
   })
 })
 
