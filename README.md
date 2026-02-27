@@ -80,10 +80,13 @@ OSRM does not support isochrone computation — use it only when you need a fast
 
 | Function | Description |
 |----------|-------------|
-| `intersectPolygons(polygons)` | Sutherland–Hodgman N-polygon intersection; returns `GeoJSONPolygon \| null` |
+| `intersectPolygons(polygons)` | Sutherland–Hodgman N-polygon intersection; returns largest component or `null` |
+| `intersectPolygonsAll(polygons)` | N-polygon intersection preserving all disconnected components; returns `GeoJSONPolygon[]` |
 | `boundingBox(polygon)` | Compute `BBox` (minLon, minLat, maxLon, maxLat) |
 | `centroid(polygon)` | Geometric centre as `{ lat, lon }` |
 | `polygonArea(polygon)` | Area in square metres |
+| `circleToPolygon(centre, radiusMetres, segments?)` | Approximate a circle as a GeoJSON Polygon (default 64 segments) |
+| `getDestinationPoint(start, distanceMetres, bearingDeg)` | Haversine destination point from `[lon, lat]`, distance, and bearing |
 
 ### Engines
 
@@ -116,12 +119,15 @@ OSRM does not support isochrone computation — use it only when you need a fast
 | `Venue` | `{ name, lat, lon, venueType, osmId? }` |
 | `RendezvousOptions` | `{ participants, mode, maxTimeMinutes, venueTypes, fairness?, limit? }` |
 | `RendezvousSuggestion` | `{ venue, travelTimes, fairnessScore }` |
+| `BBox` | `{ minLon, minLat, maxLon, maxLat }` |
+| `Coordinate` | `{ lat, lon }` |
 
 ## Subpath Exports
 
 ```typescript
 import { findRendezvous } from 'rendezvous-kit'                          // barrel
-import { intersectPolygons, centroid } from 'rendezvous-kit/geo'          // geometry
+import { intersectPolygons, intersectPolygonsAll, centroid,
+         circleToPolygon, getDestinationPoint } from 'rendezvous-kit/geo' // geometry
 import { ValhallaEngine } from 'rendezvous-kit/engines/valhalla'
 import { OpenRouteServiceEngine } from 'rendezvous-kit/engines/openrouteservice'
 import { GraphHopperEngine } from 'rendezvous-kit/engines/graphhopper'
@@ -135,11 +141,12 @@ import { findRendezvous } from 'rendezvous-kit/rendezvous'               // same
 `findRendezvous` runs six steps:
 
 1. **Isochrones** — compute a reachability polygon for each participant
-2. **Intersection** — intersect all polygons using Sutherland–Hodgman; returns `null` if there is no overlap
+2. **Intersection** — intersect all polygons using Sutherland–Hodgman (supports concave shapes and disconnected components)
 3. **Venue search** — query Overpass API within the intersection's bounding box
 4. **Route matrix** — compute travel times from every participant to every candidate venue
-5. **Scoring** — apply the fairness strategy to produce a single score per venue
-6. **Ranking** — sort by score ascending and return the top `limit` suggestions
+5. **Filtering** — remove venues where any participant exceeds the time budget or is unreachable
+6. **Scoring** — apply the fairness strategy to produce a single score per venue
+7. **Ranking** — sort by score ascending and return the top `limit` suggestions
 
 If the isochrones do not overlap, `findRendezvous` returns an empty array. If no venues are found, it falls back to the geometric centroid of the intersection.
 
