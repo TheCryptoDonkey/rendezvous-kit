@@ -2,7 +2,7 @@
   "name": "rendezvous-kit",
   "version": "0.0.0-development",
   "type": "module",
-  "description": "Find fair meeting points for N people — isochrone intersection, venue search, and fairness scoring. Zero third-party dependencies.",
+  "description": "Find fair meeting points for N people — isochrone intersection, venue search, and fairness scoring.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
