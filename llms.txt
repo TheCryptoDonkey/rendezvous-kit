@@ -23,10 +23,13 @@ The main pipeline function.
 ### rendezvous-kit/geo
 Pure-TypeScript polygon geometry.
 
-- intersectPolygons(polygons: GeoJSONPolygon[]) → GeoJSONPolygon | null
+- intersectPolygons(polygons: GeoJSONPolygon[]) → GeoJSONPolygon | null — largest intersection component
+- intersectPolygonsAll(polygons: GeoJSONPolygon[]) → GeoJSONPolygon[] — all intersection components
 - boundingBox(polygon: GeoJSONPolygon) → BBox
 - centroid(polygon: GeoJSONPolygon) → { lat, lon }
 - polygonArea(polygon: GeoJSONPolygon) → number (square metres)
+- circleToPolygon(centre: [lon, lat], radiusMetres, segments?) → GeoJSONPolygon
+- getDestinationPoint(start: [lon, lat], distanceMetres, bearingDeg) → [lon, lat]
 
 ### rendezvous-kit/engines/valhalla
 - new ValhallaEngine({ baseUrl: string })
