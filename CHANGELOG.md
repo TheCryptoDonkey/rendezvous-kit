@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.1.0...v1.2.0) (2026-02-27)
+
+
+### Features
+
+* ranked venue markers, East Midlands scenario, overlay back button ([98a4382](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/98a43824e788f253093ed144618232ca533616ad)), closes [#1](https://github.com/TheCryptoDonkey/rendezvous-kit/issues/1) [#2](https://github.com/TheCryptoDonkey/rendezvous-kit/issues/2)
+
 # [1.1.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.0.0...v1.1.0) (2026-02-27)
 
 
