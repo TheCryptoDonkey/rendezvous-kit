@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.4.0...v1.4.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* remove popups, soften intersection, add fairness descriptions ([1eb0e7a](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/1eb0e7ab6fd80c6583aeb1b6ff8195573101816b))
+
 # [1.4.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.3.0...v1.4.0) (2026-02-27)
 
 
