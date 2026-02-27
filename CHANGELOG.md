@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.2.0...v1.3.0) (2026-02-27)
+
+
+### Features
+
+* make [#1](https://github.com/TheCryptoDonkey/rendezvous-kit/issues/1) venue unmissable on the map ([14f8e20](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/14f8e206c56c5ea819c6389fe18db154a8eb7a2b))
+
 # [1.2.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.1.0...v1.2.0) (2026-02-27)
 
 
