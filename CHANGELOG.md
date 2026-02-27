@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.5.0...v1.6.0) (2026-02-27)
+
+
+### Features
+
+* bigger participant markers with isochrone highlighting ([1db9308](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/1db9308a1adad6e7ac0a6b551a05057ad556235e))
+
 # [1.5.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.4.1...v1.5.0) (2026-02-27)
 
 
