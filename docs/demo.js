@@ -10,6 +10,16 @@ let currentFairness = 'min_max'
 let markers = []
 let animationId = 0 // incremented on each load to cancel stale animations
 
+// --- Helpers ---
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
 // --- Fairness scoring (mirrors rendezvous.ts logic) ---
 
 function computeFairness(times, strategy) {
@@ -47,7 +57,10 @@ function init() {
   // Fairness strategy picker
   document.getElementById('fairness-picker').addEventListener('change', (e) => {
     currentFairness = e.target.value
-    if (currentScenario) displayResults()
+    if (currentScenario) {
+      displayResults()
+      updateCodePanel(currentScenario)
+    }
   })
 
   // Tab switching
@@ -71,6 +84,11 @@ async function loadScenario(name) {
   const thisAnimation = ++animationId
 
   const res = await fetch(`scenarios/${name}.json`)
+  if (!res.ok) {
+    document.getElementById('results-list').innerHTML =
+      `<div class="result-card"><div class="result-info">Failed to load scenario: ${name}</div></div>`
+    return
+  }
   currentScenario = await res.json()
 
   // Update transport mode display
@@ -167,7 +185,7 @@ function addParticipantMarkers(participants) {
 
     const marker = new maplibregl.Marker({ element: el })
       .setLngLat([p.lon, p.lat])
-      .setPopup(new maplibregl.Popup({ offset: 10 }).setHTML(`<b>${p.label}</b>`))
+      .setPopup(new maplibregl.Popup({ offset: 10 }).setHTML(`<b>${esc(p.label)}</b>`))
       .addTo(map)
 
     markers.push(marker)
@@ -183,7 +201,7 @@ function addVenueMarkers(venues) {
     const marker = new maplibregl.Marker({ element: el })
       .setLngLat([v.lon, v.lat])
       .setPopup(new maplibregl.Popup({ offset: 10 }).setHTML(
-        `<b>${v.name}</b><br><small>${v.venueType}</small>`,
+        `<b>${esc(v.name)}</b><br><small>${esc(v.venueType)}</small>`,
       ))
       .addTo(map)
 
@@ -274,10 +292,10 @@ function displayResults() {
     <div class="result-card">
       <div class="result-rank">${i + 1}</div>
       <div class="result-info">
-        <div class="result-name">${v.name}</div>
+        <div class="result-name">${esc(v.name)}</div>
         <div class="result-times">
           ${Object.entries(v.travelTimes).map(([name, t]) =>
-            `<span>${name}: ${t}min</span>`
+            `<span>${esc(name)}: ${t}min</span>`
           ).join(' ')}
         </div>
         <div class="result-score">Score: ${v.score.toFixed(1)}</div>
