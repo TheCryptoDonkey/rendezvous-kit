@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.4.1...v1.5.0) (2026-02-27)
+
+
+### Features
+
+* add circleToPolygon and getDestinationPoint geodesic utilities ([db590c2](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/db590c272674a988df69bfbc3876389e48b5776e))
+
 ## [1.4.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.4.0...v1.4.1) (2026-02-27)
 
 
