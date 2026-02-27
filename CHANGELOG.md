@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.7.0...v1.8.0) (2026-02-27)
+
+
+### Features
+
+* multi-component intersection, concave clipping, and pipeline hardening ([39702f6](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/39702f6e69129a94681546f24bd463b7e78e39f2))
+
 # [1.7.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.6.0...v1.7.0) (2026-02-27)
 
 
