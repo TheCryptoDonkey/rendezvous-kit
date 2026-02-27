@@ -291,7 +291,10 @@ select:focus:not(:focus-visible) { outline: none; }
   gap: 8px;
 }
 
-.result-score { font-size: 12px; color: var(--score); }
+.result-score { font-size: 12px; color: var(--score); font-weight: 600; }
+
+.time-hot { color: var(--venue); font-weight: 600; }
+.time-cool { color: var(--score); font-weight: 600; }
 
 /* --- Footer / Code Panel --- */
 footer {

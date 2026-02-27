@@ -423,6 +423,35 @@ async function animatePipeline(expectedId) {
 
 // --- Results panel ---
 
+function highlightClass(times, name, strategy) {
+  const vals = Object.values(times)
+  const t = times[name]
+  switch (strategy) {
+    case 'min_max':
+      return t === Math.max(...vals) ? 'time-hot' : ''
+    case 'min_variance': {
+      const min = Math.min(...vals)
+      const max = Math.max(...vals)
+      return t === max ? 'time-hot' : t === min ? 'time-cool' : ''
+    }
+    default:
+      return ''
+  }
+}
+
+function scoreLabel(strategy) {
+  switch (strategy) {
+    case 'min_max': return 'Worst'
+    case 'min_total': return 'Total'
+    case 'min_variance': return 'Spread'
+    default: return 'Score'
+  }
+}
+
+function scoreUnit(strategy) {
+  return strategy === 'min_variance' ? '' : ' min'
+}
+
 function displayResults() {
   const s = currentScenario
   const scored = s.venues
@@ -432,6 +461,9 @@ function displayResults() {
     }))
     .sort((a, b) => a.score - b.score)
 
+  const label = scoreLabel(currentFairness)
+  const unit = scoreUnit(currentFairness)
+
   const list = document.getElementById('results-list')
   list.innerHTML = scored.map((v, i) => `
     <div class="result-card" data-venue="${esc(v.name)}">
@@ -440,10 +472,10 @@ function displayResults() {
         <div class="result-name">${esc(v.name)}</div>
         <div class="result-times">
           ${Object.entries(v.travelTimes).map(([name, t]) =>
-            `<span>${esc(name)}: ${t}min</span>`
+            `<span class="${highlightClass(v.travelTimes, name, currentFairness)}">${esc(name)}: ${t}min</span>`
           ).join(' ')}
         </div>
-        <div class="result-score">Score: ${v.score.toFixed(1)}</div>
+        <div class="result-score">${label}: ${v.score.toFixed(1)}${unit}</div>
       </div>
     </div>
   `).join('')
