@@ -7,7 +7,7 @@ const PROFILE: Record<TransportMode, string> = {
   drive: 'car',
   cycle: 'bike',
   walk: 'foot',
-  public_transit: 'car',
+  public_transit: 'car', // OSRM does not support public transit; fallback to driving
 }
 
 export class OsrmEngine implements RoutingEngine {
@@ -18,7 +18,7 @@ export class OsrmEngine implements RoutingEngine {
     this.baseUrl = config.baseUrl.replace(/\/$/, '')
   }
 
-  computeIsochrone(): Promise<Isochrone> {
+  computeIsochrone(_origin: LatLon, _mode: TransportMode, _timeMinutes: number): Promise<Isochrone> {
     throw new Error(
       'OSRM does not support isochrone computation. Use Valhalla, ORS, or GraphHopper instead.'
     )
