@@ -1,0 +1,30 @@
+{
+  "name": "trott-routing",
+  "version": "0.1.0",
+  "description": "Engine-agnostic routing abstraction for TROTT — isochrones, route matrices, and multi-party rendezvous",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./engines/*": {
+      "types": "./dist/engines/*.d.ts",
+      "import": "./dist/engines/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "files": ["dist"],
+  "license": "MIT"
+}
