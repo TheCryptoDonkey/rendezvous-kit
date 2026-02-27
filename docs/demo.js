@@ -8,6 +8,7 @@ let map
 let currentScenario = null
 let currentFairness = 'min_max'
 let markers = []
+let venueMarkers = [] // { marker, venue } — kept separate for rank updates
 let animationId = 0 // incremented on each load to cancel stale animations
 
 // --- Helpers ---
@@ -108,6 +109,8 @@ function clearMap() {
   // Remove markers
   markers.forEach(m => m.remove())
   markers = []
+  venueMarkers.forEach(vm => vm.marker.remove())
+  venueMarkers = []
 
   // Remove demo layers and sources
   const style = map.getStyle()
@@ -205,8 +208,26 @@ function addVenueMarkers(venues) {
       ))
       .addTo(map)
 
-    markers.push(marker)
+    venueMarkers.push({ marker, venue: v })
   })
+}
+
+function updateVenueRanks() {
+  const scored = currentScenario.venues
+    .map(v => ({
+      name: v.name,
+      score: computeFairness(Object.values(v.travelTimes), currentFairness),
+    }))
+    .sort((a, b) => a.score - b.score)
+
+  const rankByName = new Map(scored.map((v, i) => [v.name, i + 1]))
+
+  for (const { marker, venue } of venueMarkers) {
+    const rank = rankByName.get(venue.name) ?? 99
+    const el = marker.getElement()
+    el.dataset.rank = String(rank)
+    el.textContent = String(rank)
+  }
 }
 
 // --- Pipeline animation ---
@@ -302,6 +323,8 @@ function displayResults() {
       </div>
     </div>
   `).join('')
+
+  updateVenueRanks()
 }
 
 // --- Fit map bounds ---

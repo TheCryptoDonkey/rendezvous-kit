@@ -214,6 +214,42 @@ function buildEdinburgh(): Scenario {
   }
 }
 
+// --- East Midlands Drive (drive, 45 min) ---
+
+function buildEastMidlands(): Scenario {
+  const participants: Participant[] = [
+    { lat: 52.9225, lon: -1.4746, label: 'Alice' },   // Derby
+    { lat: 52.9548, lon: -1.1581, label: 'Bob' },     // Nottingham
+    { lat: 52.6369, lon: -1.1398, label: 'Carol' },   // Leicester
+  ]
+  const mode = 'drive'
+  const radiusKm = 35
+  const isochrones = participants.map((p, i) =>
+    generateIsochrone(p.lat, p.lon, radiusKm, 20, i + 30),
+  )
+  const intersection = intersectPolygons(isochrones)
+  if (!intersection) throw new Error('East Midlands isochrones do not intersect')
+
+  const venues = buildVenues([
+    { name: 'Donington Park', lat: 52.8310, lon: -1.3750, venueType: 'park' },
+    { name: 'Kegworth Village Cafe', lat: 52.8340, lon: -1.2680, venueType: 'cafe' },
+    { name: 'Loughborough Market', lat: 52.7720, lon: -1.2060, venueType: 'cafe' },
+    { name: 'East Midlands Gateway', lat: 52.8550, lon: -1.3100, venueType: 'restaurant' },
+  ], participants, mode)
+
+  return {
+    name: 'East Midlands Drive',
+    description: '3 friends from Derby, Nottingham, and Leicester meeting midway',
+    participants,
+    mode,
+    maxTimeMinutes: 60,
+    venueTypes: ['cafe', 'restaurant', 'park'],
+    isochrones,
+    intersection,
+    venues,
+  }
+}
+
 // --- Generate and write ---
 
 mkdirSync('docs/scenarios', { recursive: true })
@@ -222,6 +258,7 @@ const scenarios = {
   bristol: buildBristol(),
   london: buildLondon(),
   edinburgh: buildEdinburgh(),
+  'east-midlands': buildEastMidlands(),
 }
 
 for (const [name, scenario] of Object.entries(scenarios)) {
@@ -230,4 +267,4 @@ for (const [name, scenario] of Object.entries(scenarios)) {
   console.log(`Wrote ${path} (${JSON.stringify(scenario).length} bytes)`)
 }
 
-console.log('Done — 3 scenarios generated')
+console.log('Done — 4 scenarios generated')
