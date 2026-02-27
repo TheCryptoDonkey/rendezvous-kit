@@ -1,0 +1,481 @@
+# rendezvous-kit — Full API Reference
+
+> TypeScript library for finding fair meeting points for N people — isochrone intersection, venue search, and fairness scoring.
+
+One runtime dependency: geohash-kit. Zero third-party dependencies. ESM-only.
+
+Repository: https://github.com/TheCryptoDonkey/rendezvous-kit
+Licence: MIT
+
+## Install
+
+```
+npm install rendezvous-kit
+```
+
+## Imports
+
+```typescript
+// Barrel (everything)
+import { findRendezvous, ValhallaEngine, intersectPolygons } from 'rendezvous-kit'
+
+// Subpath (tree-shakeable)
+import { findRendezvous } from 'rendezvous-kit/rendezvous'
+import { intersectPolygons, boundingBox, centroid, polygonArea } from 'rendezvous-kit/geo'
+import { ValhallaEngine } from 'rendezvous-kit/engines/valhalla'
+import { OpenRouteServiceEngine } from 'rendezvous-kit/engines/openrouteservice'
+import { GraphHopperEngine } from 'rendezvous-kit/engines/graphhopper'
+import { OsrmEngine } from 'rendezvous-kit/engines/osrm'
+import { searchVenues } from 'rendezvous-kit/venues'
+```
+
+---
+
+## Types
+
+```typescript
+/** A point with coordinates and optional label. */
+interface LatLon {
+  lat: number
+  lon: number
+  label?: string
+}
+
+/** Standard GeoJSON polygon geometry. Coordinates are [longitude, latitude] pairs. */
+interface GeoJSONPolygon {
+  type: 'Polygon'
+  coordinates: number[][][]
+}
+
+/** Transport mode for routing calculations. */
+type TransportMode = 'drive' | 'cycle' | 'walk' | 'public_transit'
+
+/** Fairness strategy for rendezvous scoring. */
+type FairnessStrategy = 'min_max' | 'min_total' | 'min_variance'
+
+/** Venue type for filtering. Custom strings are passed through to Overpass as amenity=<value>. */
+type VenueType =
+  | 'park'
+  | 'cafe'
+  | 'restaurant'
+  | 'service_station'
+  | 'library'
+  | 'pub'
+  | 'playground'
+  | 'community_centre'
+  | string
+
+/** Result of an isochrone computation. */
+interface Isochrone {
+  origin: LatLon
+  mode: TransportMode
+  timeMinutes: number
+  polygon: GeoJSONPolygon
+}
+
+/** A single cell in a route matrix. */
+interface MatrixEntry {
+  originIndex: number
+  destinationIndex: number
+  durationMinutes: number
+  distanceKm: number
+}
+
+/** Result of a route matrix computation. */
+interface RouteMatrix {
+  origins: LatLon[]
+  destinations: LatLon[]
+  entries: MatrixEntry[]
+}
+
+/** A venue found within the rendezvous zone. */
+interface Venue {
+  name: string
+  lat: number
+  lon: number
+  venueType: VenueType
+  osmId?: string  // e.g. 'node/123456'
+}
+
+/** Options for rendezvous calculation. */
+interface RendezvousOptions {
+  participants: LatLon[]       // at least 2 required
+  mode: TransportMode
+  maxTimeMinutes: number       // isochrone time limit
+  venueTypes: VenueType[]
+  fairness?: FairnessStrategy  // default: 'min_max'
+  limit?: number               // max suggestions to return, default: 5
+}
+
+/** A ranked rendezvous suggestion. */
+interface RendezvousSuggestion {
+  venue: Venue
+  travelTimes: Record<string, number>  // keyed by participant label or 'participant_N'
+  fairnessScore: number                // lower is better
+}
+
+/** Engine-agnostic routing interface. Implement this to add a custom engine. */
+interface RoutingEngine {
+  readonly name: string
+  computeIsochrone(origin: LatLon, mode: TransportMode, timeMinutes: number): Promise<Isochrone>
+  computeRouteMatrix(origins: LatLon[], destinations: LatLon[], mode: TransportMode): Promise<RouteMatrix>
+}
+
+/** Bounding box (from rendezvous-kit/geo). */
+interface BBox {
+  minLon: number
+  minLat: number
+  maxLon: number
+  maxLat: number
+}
+```
+
+---
+
+## rendezvous-kit/rendezvous
+
+### findRendezvous(engine, options)
+
+Run the full rendezvous pipeline and return ranked venue suggestions.
+
+**Algorithm:**
+1. Compute an isochrone polygon for each participant
+2. Intersect all isochrone polygons (Sutherland–Hodgman)
+3. Search for venues within the intersection bounding box (Overpass API)
+4. Compute a route matrix from all participants to all candidate venues
+5. Score each venue by the selected fairness strategy
+6. Sort ascending by score and return the top `limit` results
+
+Returns an empty array if the isochrones do not overlap. Falls back to the geometric centroid if no venues are found in the intersection.
+
+```typescript
+findRendezvous(engine: RoutingEngine, options: RendezvousOptions): Promise<RendezvousSuggestion[]>
+
+// Throws RangeError if participants.length < 2
+```
+
+**Example — three participants, Valhalla, minimise worst case:**
+
+```typescript
+import { findRendezvous } from 'rendezvous-kit'
+import { ValhallaEngine } from 'rendezvous-kit/engines/valhalla'
+
+const engine = new ValhallaEngine({ baseUrl: 'http://localhost:8002' })
+
+const suggestions = await findRendezvous(engine, {
+  participants: [
+    { lat: 51.5074, lon: -0.1278, label: 'Alice' },   // London
+    { lat: 51.4545, lon: -2.5879, label: 'Bob' },     // Bristol
+    { lat: 52.4862, lon: -1.8904, label: 'Carol' },   // Birmingham
+  ],
+  mode: 'drive',
+  maxTimeMinutes: 90,
+  venueTypes: ['cafe', 'restaurant'],
+  fairness: 'min_max',
+  limit: 5,
+})
+
+// suggestions[0] is the venue with the lowest worst-case travel time
+console.log(suggestions[0].venue.name)
+console.log(suggestions[0].travelTimes)  // { Alice: 72.3, Bob: 81.1, Carol: 68.4 }
+console.log(suggestions[0].fairnessScore) // 81.1 (max of travel times, for min_max)
+```
+
+**Example — two participants, OpenRouteService, equalise travel:**
+
+```typescript
+import { findRendezvous } from 'rendezvous-kit'
+import { OpenRouteServiceEngine } from 'rendezvous-kit/engines/openrouteservice'
+
+const engine = new OpenRouteServiceEngine({ apiKey: 'your-api-key' })
+
+const suggestions = await findRendezvous(engine, {
+  participants: [
+    { lat: 48.8566, lon: 2.3522, label: 'Paris' },
+    { lat: 50.8503, lon: 4.3517, label: 'Brussels' },
+  ],
+  mode: 'drive',
+  maxTimeMinutes: 120,
+  venueTypes: ['restaurant'],
+  fairness: 'min_variance',
+})
+```
+
+---
+
+## Fairness Strategies
+
+### min_max (default)
+Minimises the maximum travel time among all participants.
+
+Score = `Math.max(...travelTimes)`
+
+Best when you want to guarantee nobody has an excessively long journey. The classic minimax fairness criterion.
+
+### min_total
+Minimises the total travel time across all participants.
+
+Score = `sum(travelTimes)`
+
+Best when you want the group's combined travel effort to be as low as possible. Can allow one person to travel much further than others.
+
+### min_variance
+Minimises variance in travel times (standard deviation).
+
+Score = `sqrt(variance(travelTimes))`
+
+Best when you want everyone to travel roughly the same distance. Venues near the geometric centre of the group tend to score well.
+
+---
+
+## rendezvous-kit/geo
+
+### intersectPolygons(polygons)
+
+Compute the intersection of N GeoJSON polygons using the Sutherland–Hodgman algorithm. Returns `null` if the intersection is empty or if any input polygon is degenerate.
+
+```typescript
+intersectPolygons(polygons: GeoJSONPolygon[]): GeoJSONPolygon | null
+
+// Single polygon — returned unchanged
+intersectPolygons([poly])  // poly
+
+// Two overlapping polygons
+intersectPolygons([polyA, polyB])  // intersection polygon
+
+// No overlap
+intersectPolygons([polyA, polyFarAway])  // null
+```
+
+### boundingBox(polygon)
+
+Compute the axis-aligned bounding box of a GeoJSON polygon.
+
+```typescript
+boundingBox(polygon: GeoJSONPolygon): BBox
+
+boundingBox(poly)
+// { minLon: -0.15, minLat: 51.50, maxLon: -0.10, maxLat: 51.52 }
+```
+
+### centroid(polygon)
+
+Compute the arithmetic centroid of the outer ring of a GeoJSON polygon.
+
+```typescript
+centroid(polygon: GeoJSONPolygon): { lat: number; lon: number }
+
+centroid(poly)
+// { lat: 51.51, lon: -0.125 }
+```
+
+### polygonArea(polygon)
+
+Compute the area of a GeoJSON polygon in square metres using the shoelace formula with local metric projection.
+
+```typescript
+polygonArea(polygon: GeoJSONPolygon): number
+
+polygonArea(poly)  // area in m²
+```
+
+---
+
+## Engines
+
+### ValhallaEngine
+
+Self-hosted [Valhalla](https://github.com/valhalla/valhalla) routing engine. Supports isochrone and route matrix. No authentication required.
+
+```typescript
+class ValhallaEngine implements RoutingEngine {
+  readonly name = 'Valhalla'
+  constructor(config: { baseUrl: string })
+}
+```
+
+```typescript
+import { ValhallaEngine } from 'rendezvous-kit/engines/valhalla'
+
+const engine = new ValhallaEngine({ baseUrl: 'http://localhost:8002' })
+```
+
+Transport mode mapping: `drive → auto`, `cycle → bicycle`, `walk → pedestrian`, `public_transit → multimodal`
+
+### OpenRouteServiceEngine
+
+[OpenRouteService](https://openrouteservice.org/) cloud or self-hosted. Supports isochrone and route matrix. Requires API key for the cloud service.
+
+```typescript
+class OpenRouteServiceEngine implements RoutingEngine {
+  readonly name = 'OpenRouteService'
+  constructor(options: { apiKey: string; baseUrl?: string })
+  // baseUrl defaults to 'https://api.openrouteservice.org'
+}
+```
+
+```typescript
+import { OpenRouteServiceEngine } from 'rendezvous-kit/engines/openrouteservice'
+
+// Cloud (requires free API key from openrouteservice.org)
+const engine = new OpenRouteServiceEngine({ apiKey: 'your-api-key' })
+
+// Self-hosted
+const engine = new OpenRouteServiceEngine({
+  apiKey: 'local',
+  baseUrl: 'http://localhost:8080/ors',
+})
+```
+
+Note: ORS does not support `public_transit`; the engine falls back to `driving-car`.
+
+### GraphHopperEngine
+
+[GraphHopper](https://www.graphhopper.com/) cloud or self-hosted. Supports isochrone and route matrix. API key is optional for self-hosted instances.
+
+```typescript
+class GraphHopperEngine implements RoutingEngine {
+  readonly name = 'GraphHopper'
+  constructor(config: { baseUrl: string; apiKey?: string })
+}
+```
+
+```typescript
+import { GraphHopperEngine } from 'rendezvous-kit/engines/graphhopper'
+
+// Self-hosted (no key needed)
+const engine = new GraphHopperEngine({ baseUrl: 'http://localhost:8989' })
+
+// Cloud
+const engine = new GraphHopperEngine({
+  baseUrl: 'https://graphhopper.com/api/1',
+  apiKey: 'your-api-key',
+})
+```
+
+### OsrmEngine
+
+Self-hosted [OSRM](http://project-osrm.org/). Route matrix only — `computeIsochrone` throws an error. No authentication required.
+
+```typescript
+class OsrmEngine implements RoutingEngine {
+  readonly name = 'OSRM'
+  constructor(config: { baseUrl: string })
+  // computeIsochrone() throws — use Valhalla, ORS, or GraphHopper for isochrones
+}
+```
+
+```typescript
+import { OsrmEngine } from 'rendezvous-kit/engines/osrm'
+
+const engine = new OsrmEngine({ baseUrl: 'http://localhost:5000' })
+
+// Use directly for matrix-only workflows
+const matrix = await engine.computeRouteMatrix(origins, destinations, 'drive')
+```
+
+---
+
+## rendezvous-kit/venues
+
+### searchVenues(polygon, venueTypes, overpassUrl?)
+
+Search for venues within a polygon using the [Overpass API](https://overpass-api.de/). Queries the bounding box of the polygon. Named nodes only.
+
+```typescript
+searchVenues(
+  polygon: GeoJSONPolygon,
+  venueTypes: VenueType[],
+  overpassUrl?: string,  // defaults to 'https://overpass-api.de/api/interpreter'
+): Promise<Venue[]>
+```
+
+```typescript
+import { searchVenues } from 'rendezvous-kit/venues'
+import { intersectPolygons } from 'rendezvous-kit/geo'
+
+const intersection = intersectPolygons([isoA.polygon, isoB.polygon])
+if (intersection) {
+  const venues = await searchVenues(intersection, ['cafe', 'restaurant'])
+  // [{ name: 'The Red Lion', lat: 51.9, lon: -1.4, venueType: 'pub', osmId: 'node/123' }, ...]
+}
+```
+
+Built-in `VenueType` to Overpass tag mapping:
+
+| VenueType | Overpass tag |
+|-----------|-------------|
+| `park` | `leisure=park` |
+| `cafe` | `amenity=cafe` |
+| `restaurant` | `amenity=restaurant` |
+| `service_station` | `amenity=fuel` |
+| `library` | `amenity=library` |
+| `pub` | `amenity=pub` |
+| `playground` | `leisure=playground` |
+| `community_centre` | `amenity=community_centre` |
+
+Unknown strings are passed through as `amenity=<value>`.
+
+---
+
+## Implementing a Custom Engine
+
+```typescript
+import type { RoutingEngine, LatLon, TransportMode, Isochrone, RouteMatrix } from 'rendezvous-kit'
+
+class MyRoutingEngine implements RoutingEngine {
+  readonly name = 'MyEngine'
+
+  async computeIsochrone(
+    origin: LatLon,
+    mode: TransportMode,
+    timeMinutes: number,
+  ): Promise<Isochrone> {
+    const polygon = await myApi.getIsochrone(origin.lat, origin.lon, timeMinutes)
+    return { origin, mode, timeMinutes, polygon }
+  }
+
+  async computeRouteMatrix(
+    origins: LatLon[],
+    destinations: LatLon[],
+    mode: TransportMode,
+  ): Promise<RouteMatrix> {
+    const raw = await myApi.getMatrix(origins, destinations)
+    const entries = []
+    for (let oi = 0; oi < origins.length; oi++) {
+      for (let di = 0; di < destinations.length; di++) {
+        entries.push({
+          originIndex: oi,
+          destinationIndex: di,
+          durationMinutes: raw[oi][di].seconds / 60,
+          distanceKm: raw[oi][di].metres / 1000,
+        })
+      }
+    }
+    return { origins, destinations, entries }
+  }
+}
+
+// Use it with findRendezvous
+const suggestions = await findRendezvous(new MyRoutingEngine(), options)
+```
+
+---
+
+## Engine Comparison
+
+| Engine | Isochrone | Matrix | Auth | Notes |
+|--------|:---------:|:------:|------|-------|
+| Valhalla | Yes | Yes | None | Best self-hosted option; supports public transit |
+| OpenRouteService | Yes | Yes | API key | Free tier available; no public transit |
+| GraphHopper | Yes | Yes | Optional | API key only for cloud; optional self-hosted |
+| OSRM | No | Yes | None | Fastest matrix; no isochrone support |
+
+---
+
+## Companion Library
+
+**geohash-kit** — spatial primitives used internally by rendezvous-kit.
+
+- Repository: https://github.com/TheCryptoDonkey/geohash-kit
+- npm: geohash-kit

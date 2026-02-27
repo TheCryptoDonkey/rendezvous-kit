@@ -1,0 +1,86 @@
+# rendezvous-kit
+
+> TypeScript library for finding fair meeting points for N people — isochrone intersection, venue search, and fairness scoring.
+
+One runtime dependency: geohash-kit. Zero third-party dependencies. ESM-only. Five subpath exports.
+
+Repository: https://github.com/TheCryptoDonkey/rendezvous-kit
+
+## Install
+
+npm install rendezvous-kit
+
+## Subpath Exports
+
+### rendezvous-kit (barrel)
+Re-exports everything below.
+
+### rendezvous-kit/rendezvous
+The main pipeline function.
+
+- findRendezvous(engine, options) → Promise<RendezvousSuggestion[]>
+
+### rendezvous-kit/geo
+Pure-TypeScript polygon geometry.
+
+- intersectPolygons(polygons: GeoJSONPolygon[]) → GeoJSONPolygon | null
+- boundingBox(polygon: GeoJSONPolygon) → BBox
+- centroid(polygon: GeoJSONPolygon) → { lat, lon }
+- polygonArea(polygon: GeoJSONPolygon) → number (square metres)
+
+### rendezvous-kit/engines/valhalla
+- new ValhallaEngine({ baseUrl: string })
+
+### rendezvous-kit/engines/openrouteservice
+- new OpenRouteServiceEngine({ apiKey: string, baseUrl?: string })
+
+### rendezvous-kit/engines/graphhopper
+- new GraphHopperEngine({ baseUrl: string, apiKey?: string })
+
+### rendezvous-kit/engines/osrm
+- new OsrmEngine({ baseUrl: string })  — matrix only, no isochrone
+
+### rendezvous-kit/venues
+- searchVenues(polygon: GeoJSONPolygon, venueTypes: VenueType[], overpassUrl?: string) → Promise<Venue[]>
+
+## Key Types
+
+- LatLon: { lat, lon, label? }
+- GeoJSONPolygon: { type: 'Polygon', coordinates: number[][][] }
+- TransportMode: 'drive' | 'cycle' | 'walk' | 'public_transit'
+- FairnessStrategy: 'min_max' | 'min_total' | 'min_variance'
+- VenueType: 'park' | 'cafe' | 'restaurant' | 'service_station' | 'library' | 'pub' | 'playground' | 'community_centre' | string
+- RendezvousOptions: { participants, mode, maxTimeMinutes, venueTypes, fairness?, limit? }
+- RendezvousSuggestion: { venue, travelTimes: Record<string, number>, fairnessScore }
+- RoutingEngine: interface { name, computeIsochrone, computeRouteMatrix }
+
+## Fairness Strategies
+
+- min_max — minimise worst-case travel time (default)
+- min_total — minimise total travel time across all participants
+- min_variance — equalise travel times (minimise standard deviation)
+
+## Quick Example
+
+```typescript
+import { findRendezvous } from 'rendezvous-kit'
+import { ValhallaEngine } from 'rendezvous-kit/engines/valhalla'
+
+const engine = new ValhallaEngine({ baseUrl: 'http://localhost:8002' })
+
+const suggestions = await findRendezvous(engine, {
+  participants: [
+    { lat: 51.5074, lon: -0.1278, label: 'Alice' },
+    { lat: 51.4545, lon: -2.5879, label: 'Bob' },
+  ],
+  mode: 'drive',
+  maxTimeMinutes: 60,
+  venueTypes: ['cafe'],
+  fairness: 'min_max',
+  limit: 3,
+})
+```
+
+## Optional
+
+- llms-full.txt: Full API reference with all type signatures and examples
