@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.6.0...v1.7.0) (2026-02-27)
+
+
+### Features
+
+* highlight deciding factors per fairness strategy ([6031e3d](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/6031e3dce720bb3b8a84efc8cdbc811e3100b26b))
+
 # [1.6.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.5.0...v1.6.0) (2026-02-27)
 
 
