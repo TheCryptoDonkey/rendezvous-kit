@@ -1,30 +1,76 @@
 {
-  "name": "trott-routing",
-  "version": "0.1.0",
-  "description": "Engine-agnostic routing abstraction for TROTT — isochrones, route matrices, and multi-party rendezvous",
+  "name": "rendezvous-kit",
+  "version": "0.0.0-development",
   "type": "module",
+  "description": "Find fair meeting points for N people — isochrone intersection, venue search, and fairness scoring. Zero third-party dependencies.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
+    },
+    "./geo": {
+      "types": "./dist/geo.d.ts",
+      "default": "./dist/geo.js"
     },
     "./engines/*": {
       "types": "./dist/engines/*.d.ts",
-      "import": "./dist/engines/*.js"
+      "default": "./dist/engines/*.js"
+    },
+    "./venues": {
+      "types": "./dist/venues.d.ts",
+      "default": "./dist/venues.js"
+    },
+    "./rendezvous": {
+      "types": "./dist/rendezvous.d.ts",
+      "default": "./dist/rendezvous.js"
     }
   },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bench": "vitest bench"
+  },
+  "dependencies": {
+    "geohash-kit": "^1.1.0"
   },
   "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.6",
+    "@semantic-release/npm": "^13.1.4",
+    "semantic-release": "^25.0.3",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   },
-  "files": ["dist"],
-  "license": "MIT"
+  "files": [
+    "dist",
+    "LICENSE",
+    "llms.txt",
+    "llms-full.txt"
+  ],
+  "keywords": [
+    "rendezvous",
+    "meeting-point",
+    "isochrone",
+    "fairness",
+    "routing",
+    "valhalla",
+    "openrouteservice",
+    "graphhopper",
+    "osrm",
+    "geospatial",
+    "typescript",
+    "esm"
+  ],
+  "author": "TheCryptoDonkey",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheCryptoDonkey/rendezvous-kit.git"
+  },
+  "homepage": "https://github.com/TheCryptoDonkey/rendezvous-kit"
 }
