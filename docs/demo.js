@@ -169,31 +169,33 @@ function addIsochrone(index, polygon) {
   })
 }
 
-function addIntersection(polygon) {
-  const id = 'demo-intersection'
+function addIntersection(polygons) {
+  for (let i = 0; i < polygons.length; i++) {
+    const id = `demo-intersection-${i}`
 
-  map.addSource(id, {
-    type: 'geojson',
-    data: { type: 'Feature', geometry: polygon, properties: {} },
-  })
+    map.addSource(id, {
+      type: 'geojson',
+      data: { type: 'Feature', geometry: polygons[i], properties: {} },
+    })
 
-  map.addLayer({
-    id: `${id}-fill`,
-    type: 'fill',
-    source: id,
-    paint: { 'fill-color': INTERSECTION_COLOUR, 'fill-opacity': 0.06 },
-  })
+    map.addLayer({
+      id: `${id}-fill`,
+      type: 'fill',
+      source: id,
+      paint: { 'fill-color': INTERSECTION_COLOUR, 'fill-opacity': 0.06 },
+    })
 
-  map.addLayer({
-    id: `${id}-line`,
-    type: 'line',
-    source: id,
-    paint: {
-      'line-color': INTERSECTION_COLOUR,
-      'line-width': 1.5,
-      'line-opacity': 0.3,
-    },
-  })
+    map.addLayer({
+      id: `${id}-line`,
+      type: 'line',
+      source: id,
+      paint: {
+        'line-color': INTERSECTION_COLOUR,
+        'line-width': 1.5,
+        'line-opacity': 0.3,
+      },
+    })
+  }
 }
 
 function addParticipantMarkers(participants) {
@@ -400,7 +402,7 @@ async function animatePipeline(expectedId) {
 
   // Intersection
   addIntersection(s.intersection)
-  markStep('intersection')
+  markStep('intersection', s.intersection.length > 1 ? s.intersection.length : undefined)
   await delay(300)
   if (animationId !== expectedId) return
 
@@ -501,6 +503,13 @@ function fitToScenario(s) {
   // Also include isochrone extents for a good view
   for (const iso of s.isochrones) {
     for (const coord of iso.coordinates[0]) {
+      bounds.extend(coord)
+    }
+  }
+
+  // Include intersection extents
+  for (const inter of s.intersection) {
+    for (const coord of inter.coordinates[0]) {
       bounds.extend(coord)
     }
   }
