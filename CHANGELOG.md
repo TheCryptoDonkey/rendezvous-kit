@@ -1,3 +1,19 @@
+# [1.1.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.0.0...v1.1.0) (2026-02-27)
+
+
+### Bug Fixes
+
+* add error handling, HTML escaping, and code panel fairness sync ([1cb79af](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/1cb79afc3f1088daf15cb803affbebcf21e69824))
+* address code review — Firefox marker, focus-visible, semantic label ([f54ec02](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/f54ec025cbeea0c5b86c7f9ec4fac0a2a1cf8ecd))
+* adjust scenario data — Edinburgh coordinates, London maxTime, trailing newlines ([bed4174](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/bed41744048b836010d21ac9768b5437c01a445a))
+
+
+### Features
+
+* add demo page application logic with pipeline animation ([cac812c](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/cac812cb5d06cc0a08504b6692f404ce30a02133))
+* add demo page HTML shell and dark theme CSS ([b321b14](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/b321b140fbeb62a619a55bd2402628451b4b19ce))
+* add scenario generation script and pre-baked JSON data ([eaf0984](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/eaf098429634791c9f617d6674b4c04d0252fb9f))
+
 # 1.0.0 (2026-02-27)
 
 
