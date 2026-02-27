@@ -1,5 +1,6 @@
 import type { GeoJSONPolygon } from './types.js'
 
+/** Axis-aligned bounding box in geographic coordinates. */
 export interface BBox {
   minLon: number
   minLat: number
@@ -7,11 +8,13 @@ export interface BBox {
   maxLat: number
 }
 
+/** A geographic coordinate (latitude/longitude). */
 export interface Coordinate {
   lat: number
   lon: number
 }
 
+/** Compute the axis-aligned bounding box of a GeoJSON Polygon. Returns zeroed BBox if the polygon has no coordinates. */
 export function boundingBox(polygon: GeoJSONPolygon): BBox {
   const ring = polygon.coordinates[0]
   if (!ring || ring.length === 0) {
@@ -31,6 +34,7 @@ export function boundingBox(polygon: GeoJSONPolygon): BBox {
   return { minLon, minLat, maxLon, maxLat }
 }
 
+/** Compute the geometric centroid of a GeoJSON Polygon. Uses the arithmetic mean of the outer ring vertices (excluding closing vertex). */
 export function centroid(polygon: GeoJSONPolygon): Coordinate {
   const ring = polygon.coordinates[0]
   if (!ring || ring.length < 2) return { lat: 0, lon: 0 }
@@ -46,6 +50,7 @@ export function centroid(polygon: GeoJSONPolygon): Coordinate {
   return { lon: sumLon / n, lat: sumLat / n }
 }
 
+/** Approximate area of a GeoJSON Polygon in square metres. Uses the shoelace formula with a local flat-Earth projection centred on the polygon. */
 export function polygonArea(polygon: GeoJSONPolygon): number {
   const ring = polygon.coordinates[0]
   if (!ring || ring.length < 4) return 0
@@ -67,6 +72,12 @@ export function polygonArea(polygon: GeoJSONPolygon): number {
   return Math.abs(area) / 2
 }
 
+/**
+ * Intersect N GeoJSON Polygons, preserving all disconnected components.
+ *
+ * Uses Sutherland–Hodgman clipping for convex polygons and ear-clip triangulation
+ * for concave shapes. Returns an empty array if any pairwise intersection is empty.
+ */
 export function intersectPolygonsAll(
   polygons: GeoJSONPolygon[]
 ): GeoJSONPolygon[] {
@@ -93,6 +104,7 @@ export function intersectPolygonsAll(
   return components.filter(ring => ring.length >= 3).map(ringToPolygon)
 }
 
+/** Intersect N GeoJSON Polygons, returning the single largest component. Returns `null` if the polygons do not overlap. */
 export function intersectPolygons(
   polygons: GeoJSONPolygon[]
 ): GeoJSONPolygon | null {
