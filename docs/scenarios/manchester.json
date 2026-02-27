@@ -259,7 +259,7 @@
       "travelTimes": {
         "Alice": 2,
         "Bob": 14,
-        "Carol": 16,
+        "Carol": 15,
         "Dave": 6,
         "Eve": 14
       }
@@ -272,7 +272,7 @@
       "travelTimes": {
         "Alice": 5,
         "Bob": 13,
-        "Carol": 17,
+        "Carol": 15,
         "Dave": 3,
         "Eve": 16
       }
