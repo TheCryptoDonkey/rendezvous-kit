@@ -19,7 +19,7 @@
     }
   ],
   "mode": "public_transit",
-  "maxTimeMinutes": 30,
+  "maxTimeMinutes": 35,
   "venueTypes": [
     "cafe",
     "pub",

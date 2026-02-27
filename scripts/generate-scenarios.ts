@@ -172,7 +172,7 @@ function buildLondon(): Scenario {
     description: '3 people from Brixton, Camden, and Greenwich meeting via public transit',
     participants,
     mode,
-    maxTimeMinutes: 30,
+    maxTimeMinutes: 35,
     venueTypes: ['cafe', 'pub', 'restaurant'],
     isochrones,
     intersection,
@@ -184,7 +184,7 @@ function buildLondon(): Scenario {
 
 function buildEdinburgh(): Scenario {
   const participants: Participant[] = [
-    { lat: 55.9630, lon: -3.1780, label: 'Alice' },
+    { lat: 55.9620, lon: -3.1950, label: 'Alice' },
     { lat: 55.9595, lon: -3.2117, label: 'Bob' },
   ]
   const mode = 'walk'
@@ -226,7 +226,7 @@ const scenarios = {
 
 for (const [name, scenario] of Object.entries(scenarios)) {
   const path = `docs/scenarios/${name}.json`
-  writeFileSync(path, JSON.stringify(scenario, null, 2))
+  writeFileSync(path, JSON.stringify(scenario, null, 2) + '\n')
   console.log(`Wrote ${path} (${JSON.stringify(scenario).length} bytes)`)
 }
 
