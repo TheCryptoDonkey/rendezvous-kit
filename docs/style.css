@@ -332,7 +332,6 @@ footer {
 
 /* --- Map markers --- */
 .marker-participant {
-  position: relative;
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -364,7 +363,6 @@ footer {
 }
 
 .marker-venue {
-  position: relative;
   border-radius: 50%;
   background: var(--venue);
   border: 2px solid rgba(255, 255, 255, 0.5);
