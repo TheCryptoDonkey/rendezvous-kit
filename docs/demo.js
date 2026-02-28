@@ -31,6 +31,32 @@ let paymentPollTimer = null       // setInterval ID
 const PARTICIPANT_LABELS = ['A', 'B', 'C', 'D', 'E']
 const VALHALLA_URL = 'https://routing.trotters.cc'
 const L402_STORAGE_KEY = 'rendezvous-l402'
+const THEME_KEY = 'rendezvous-theme'
+const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+
+// --- Credit balance tracking ---
+// Intercept fetch to capture X-Credit-Balance from toll-booth responses
+
+const _origFetch = window.fetch
+window.fetch = async function (...args) {
+  const res = await _origFetch.apply(this, args)
+  const url = typeof args[0] === 'string' ? args[0] : args[0]?.url ?? ''
+  if (url.startsWith(VALHALLA_URL)) {
+    const balance = res.headers.get('X-Credit-Balance')
+    if (balance !== null) updateCreditDisplay(parseInt(balance, 10))
+  }
+  return res
+}
+
+function updateCreditDisplay(sats) {
+  const el = document.getElementById('credit-balance')
+  if (!el) return
+  el.textContent = `⚡ ${sats} sats`
+  el.classList.remove('hidden')
+  if (sats <= 0) el.classList.add('depleted')
+  else el.classList.remove('depleted')
+}
 
 // --- Helpers ---
 
@@ -97,9 +123,12 @@ function createEngine() {
 }
 
 function init() {
+  const savedTheme = localStorage.getItem(THEME_KEY)
+  const mapStyle = savedTheme === 'light' ? LIGHT_STYLE : DARK_STYLE
+
   map = new maplibregl.Map({
     container: 'map',
-    style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+    style: mapStyle,
     center: [-2.59, 51.45],
     zoom: 12,
   })
@@ -182,8 +211,48 @@ function init() {
     clearInteractive()
   })
 
+  // Theme toggle
+  initTheme()
+  document.getElementById('theme-toggle').addEventListener('click', toggleTheme)
+
   // Restore L402 token and create engine
   interactiveEngine = createEngine()
+}
+
+// --- Theme ---
+
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY)
+  if (saved === 'light') applyTheme('light')
+}
+
+function toggleTheme() {
+  const current = document.documentElement.dataset.theme
+  const next = current === 'light' ? 'dark' : 'light'
+  applyTheme(next)
+  localStorage.setItem(THEME_KEY, next)
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme === 'light' ? 'light' : ''
+  document.getElementById('theme-toggle').textContent = theme === 'light' ? '🌙' : '☀️'
+
+  // Switch map base style
+  if (map) {
+    const style = theme === 'light' ? LIGHT_STYLE : DARK_STYLE
+    const center = map.getCenter()
+    const zoom = map.getZoom()
+    map.setStyle(style)
+    map.once('style.load', () => {
+      map.setCenter(center)
+      map.setZoom(zoom)
+      // Re-render current scenario layers after style swap
+      if (currentScenario && !interactiveMode) {
+        const thisAnimation = ++animationId
+        animatePipeline(thisAnimation)
+      }
+    })
+  }
 }
 
 // --- Mode switching ---
@@ -1221,9 +1290,17 @@ async function animatePipeline(expectedId) {
   await delay(300)
   if (animationId !== expectedId) return
 
-  // Intersection
-  addIntersection(s.intersection)
-  markStep('intersection', s.intersection.length > 1 ? s.intersection.length : undefined)
+  // Intersection — apply the same relative-area filter as interactive mode
+  // to discard degenerate slivers that show up as white lines
+  const allIntersection = s.intersection.filter(p => polygonArea(p) > 0.0001)
+  const largestArea = allIntersection.length > 0
+    ? Math.max(...allIntersection.map(polygonArea))
+    : 0
+  const intersection = largestArea > 0
+    ? allIntersection.filter(p => polygonArea(p) >= largestArea * 0.1)
+    : allIntersection
+  addIntersection(intersection)
+  markStep('intersection', intersection.length > 1 ? intersection.length : undefined)
   await delay(300)
   if (animationId !== expectedId) return
 
