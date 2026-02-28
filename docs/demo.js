@@ -527,25 +527,25 @@ async function runInteractive() {
     // Step 2: Intersect polygons
     const rawIntersection = intersectPolygonsAll(isochrones)
     // Filter out degenerate polygon fragments (slivers from clipping)
-    const intersection = rawIntersection.filter(p => polygonArea(p) > 0.0001)
-    if (intersection.length === 0) {
+    const allIntersection = rawIntersection.filter(p => polygonArea(p) > 0.0001)
+    if (allIntersection.length === 0) {
       showError('No common reachable area found. Try increasing the time budget or moving participants closer together.')
       resetFindButton()
       return
     }
+    // Only keep substantial intersection polygons (>= 10% of the largest area).
+    // Thin slivers along road corridors confuse the map and produce misleading venues.
+    const largestArea = Math.max(...allIntersection.map(polygonArea))
+    const intersection = allIntersection.filter(p => polygonArea(p) >= largestArea * 0.1)
     addIntersection(intersection)
     markStep('intersection', intersection.length > 1 ? intersection.length : undefined)
 
     if (animationId !== thisAnimation) return
 
-    // Step 3: Search venues within the bounding box, then filter to those inside the actual intersection.
-    // Only use substantial intersection polygons (>= 10% of the largest) — thin slivers along
-    // road corridors extend far from the main overlap and produce misleading venue results.
+    // Step 3: Search venues within the bounding box, then filter to those inside the intersection
     const searchArea = envelopePolygon(intersection)
     const rawVenues = await searchVenues(searchArea, venueTypes)
-    const largestArea = Math.max(...intersection.map(polygonArea))
-    const mainIntersection = intersection.filter(p => polygonArea(p) >= largestArea * 0.1)
-    const venues = rawVenues.filter(v => pointInAnyPolygon(v.lon, v.lat, mainIntersection))
+    const venues = rawVenues.filter(v => pointInAnyPolygon(v.lon, v.lat, intersection))
 
     if (venues.length === 0) {
       showError('No venues found in the overlap area. Try different venue types or a larger time budget.')
