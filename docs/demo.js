@@ -1065,11 +1065,34 @@ function addRouteLayer(participantIndex, route) {
     const mins = route.durationMinutes.toFixed(1)
     const km = route.distanceKm.toFixed(1)
 
+    let legsHtml = ''
+    if (route.legs && route.legs.length > 0) {
+      let cumKm = 0
+      legsHtml = '<ol class="route-popup-legs">' + route.legs.map((leg, i) => {
+        cumKm += leg.distanceKm
+        const icon = getManoeuvreIcon(leg.type)
+        const instruction = (leg.verbalInstruction && leg.verbalInstruction.length > leg.instruction.length)
+          ? leg.verbalInstruction : leg.instruction
+        const badges = renderBadges(leg)
+        const streets = leg.streetNames ? `<div class="popup-streets">${esc(leg.streetNames.join(' / '))}</div>` : ''
+        return `<li class="route-popup-step">
+          <span class="popup-icon">${icon}</span>
+          <div class="popup-step-content">
+            <div class="popup-instruction">${esc(instruction)}</div>
+            ${streets}
+            ${badges}
+            <div class="popup-meta">${leg.distanceKm.toFixed(2)} km · ${leg.durationMinutes.toFixed(1)} min — ${cumKm.toFixed(1)} of ${km} km</div>
+          </div>
+        </li>`
+      }).join('') + '</ol>'
+    }
+
     const html = `<div class="route-popup">
-      <div class="leg">
+      <div class="route-popup-header">
         <span class="leg-dot" style="background:${colour}"></span>
-        <span class="leg-info"><strong>${esc(label)}</strong><br>${mins} min &middot; ${km} km</span>
+        <span class="leg-info"><strong>${esc(label)}</strong> · ${mins} min · ${km} km</span>
       </div>
+      ${legsHtml}
     </div>`
 
     if (routePopup) routePopup.remove()
@@ -1506,18 +1529,11 @@ function renderDirections() {
   // Remove any existing directions sections
   document.querySelectorAll('.directions-section').forEach(el => el.remove())
 
-  console.error('[DEBUG] renderDirections called, currentRoutes.size =', currentRoutes.size)
   if (currentRoutes.size === 0) return
 
   // Find the selected result card
   const selectedCard = document.querySelector('.result-card.selected')
-  console.error('[DEBUG] selectedCard =', selectedCard)
   if (!selectedCard) return
-
-  // Debug: log first route's legs
-  for (const [index, route] of currentRoutes) {
-    console.error(`[DEBUG] Route ${index}: ${route.legs?.length ?? 0} legs, first leg type=${route.legs?.[0]?.type}, streets=${route.legs?.[0]?.streetNames}`)
-  }
 
   // Build directions HTML
   const participants = interactiveMode
