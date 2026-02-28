@@ -26,6 +26,7 @@ let selectedMode = 'drive'
 let selectedTime = 15
 let routeLayers = []              // track route layers for cleanup: { layerId, handlers: { click, mouseenter, mouseleave } }
 let routePopup = null             // active route popup
+let routeGeneration = 0           // incremented on each venue selection to discard stale route results
 let paymentPollTimer = null       // setInterval ID
 const PARTICIPANT_LABELS = ['A', 'B', 'C', 'D', 'E']
 const VALHALLA_URL = 'https://routing.trotters.cc'
@@ -385,6 +386,25 @@ function polygonArea(polygon) {
   return Math.abs(area) / 2
 }
 
+function pointInPolygon(lon, lat, polygon) {
+  // Ray-casting algorithm
+  const ring = polygon.coordinates[0]
+  let inside = false
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1]
+    const xj = ring[j][0], yj = ring[j][1]
+    if (((yi > lat) !== (yj > lat)) &&
+        (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+      inside = !inside
+    }
+  }
+  return inside
+}
+
+function pointInAnyPolygon(lon, lat, polygons) {
+  return polygons.some(p => pointInPolygon(lon, lat, p))
+}
+
 function envelopePolygon(polygons) {
   // Merge all polygon coordinates into a single bounding polygon
   // Used for venue search area when intersection is valid
@@ -518,9 +538,14 @@ async function runInteractive() {
 
     if (animationId !== thisAnimation) return
 
-    // Step 3: Search venues
+    // Step 3: Search venues within the bounding box, then filter to those inside the actual intersection.
+    // Only use substantial intersection polygons (>= 10% of the largest) — thin slivers along
+    // road corridors extend far from the main overlap and produce misleading venue results.
     const searchArea = envelopePolygon(intersection)
-    const venues = await searchVenues(searchArea, venueTypes)
+    const rawVenues = await searchVenues(searchArea, venueTypes)
+    const largestArea = Math.max(...intersection.map(polygonArea))
+    const mainIntersection = intersection.filter(p => polygonArea(p) >= largestArea * 0.1)
+    const venues = rawVenues.filter(v => pointInAnyPolygon(v.lon, v.lat, mainIntersection))
 
     if (venues.length === 0) {
       showError('No venues found in the overlap area. Try different venue types or a larger time budget.')
@@ -532,6 +557,9 @@ async function runInteractive() {
     if (animationId !== thisAnimation) return
 
     // Step 4: Compute route matrix for travel times
+    // Cap venues to avoid exceeding Valhalla's max locations limit (2500).
+    // We only keep the top 5 after scoring, so 50 candidates is more than enough.
+    if (venues.length > 50) venues.length = 50
     const origins = interactiveParticipants.map(p => ({ lat: p.lat, lon: p.lon, label: p.label }))
     const destinations = venues.map(v => ({ lat: v.lat, lon: v.lon }))
     const matrix = await interactiveEngine.computeRouteMatrix(origins, destinations, selectedMode)
@@ -837,6 +865,7 @@ function addRouteLayer(participantIndex, route) {
 
 async function showRoutesForVenue(venue) {
   clearRouteLayers()
+  const thisRoute = ++routeGeneration
 
   if (interactiveMode && interactiveEngine) {
     // Live route computation
@@ -856,6 +885,7 @@ async function showRoutesForVenue(venue) {
     )
 
     const results = await Promise.all(promises)
+    if (routeGeneration !== thisRoute) return // stale — user selected a different venue
     if (firstPaymentErr) {
       handlePaymentRequired(firstPaymentErr)
       return
@@ -1040,6 +1070,7 @@ function addVenueMarkers(venues) {
 }
 
 function updateVenueRanks() {
+  if (!currentScenario?.venues) return
   const scored = currentScenario.venues
     .map(v => ({
       name: v.name,
@@ -1246,6 +1277,7 @@ function scoreUnit(strategy) {
 
 function displayResults() {
   const s = currentScenario
+  if (!s || !s.venues) return
   const scored = s.venues
     .map(v => ({
       ...v,
