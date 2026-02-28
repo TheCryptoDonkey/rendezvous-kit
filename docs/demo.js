@@ -43,19 +43,27 @@ window.fetch = async function (...args) {
   const res = await _origFetch.apply(this, args)
   const url = typeof args[0] === 'string' ? args[0] : args[0]?.url ?? ''
   if (url.startsWith(VALHALLA_URL)) {
-    const balance = res.headers.get('X-Credit-Balance')
-    if (balance !== null) updateCreditDisplay(parseInt(balance, 10))
+    const creditBalance = res.headers.get('X-Credit-Balance')
+    const freeRemaining = res.headers.get('X-Free-Remaining')
+    if (creditBalance !== null) {
+      updateCreditDisplay('sats', parseInt(creditBalance, 10))
+    } else if (freeRemaining !== null) {
+      updateCreditDisplay('free', parseInt(freeRemaining, 10))
+    }
   }
   return res
 }
 
-function updateCreditDisplay(sats) {
+function updateCreditDisplay(type, remaining) {
   const el = document.getElementById('credit-balance')
   if (!el) return
-  el.textContent = `⚡ ${sats} sats`
-  el.classList.remove('hidden')
-  if (sats <= 0) el.classList.add('depleted')
-  else el.classList.remove('depleted')
+  if (type === 'sats') {
+    el.textContent = `⚡ ${remaining} sats`
+    el.className = remaining <= 0 ? 'credit-badge depleted' : 'credit-badge paid'
+  } else {
+    el.textContent = `Free: ${remaining} left`
+    el.className = remaining <= 0 ? 'credit-badge depleted' : 'credit-badge'
+  }
 }
 
 // --- Version badge (fetched from npm, always in sync) ---
@@ -148,7 +156,8 @@ function init() {
   // Map click — interactive mode adds markers, showcase mode clears selection
   map.on('click', (e) => {
     if (interactiveMode) {
-      if (interactiveParticipants.length < 5) {
+      // Don't add participants while results are displayed — must Clear first
+      if (!interactiveResults && interactiveParticipants.length < 5) {
         addInteractiveParticipant(e.lngLat.lat, e.lngLat.lng)
       }
     } else {
@@ -268,12 +277,82 @@ function applyTheme(theme) {
     map.once('style.load', () => {
       map.setCenter(center)
       map.setZoom(zoom)
-      // Re-render current scenario layers after style swap
-      if (currentScenario && !interactiveMode) {
+      if (currentScenario) {
+        // Re-render all layers after style swap (works for both modes)
         const thisAnimation = ++animationId
-        animatePipeline(thisAnimation)
+        reRenderScenario(thisAnimation)
       }
     })
+  }
+}
+
+/** Re-add all scenario layers instantly (no animation) after a style swap. */
+function reRenderScenario(expectedId) {
+  const s = currentScenario
+  if (!s) return
+
+  // Participants
+  if (interactiveMode && interactiveParticipants.length) {
+    // Re-create interactive participant markers (draggable)
+    interactiveParticipants.forEach((p, i) => {
+      const colour = COLOURS[i % COLOURS.length]
+      const el = document.createElement('div')
+      el.className = 'marker-participant'
+      el.style.background = colour
+      el.style.boxShadow = `0 0 10px ${colour}`
+      el.style.color = colour
+      const label = document.createElement('span')
+      label.className = 'participant-label'
+      label.textContent = p.label
+      label.style.color = colour
+      el.appendChild(label)
+      el.addEventListener('click', (e) => e.stopPropagation())
+      const marker = new maplibregl.Marker({ element: el, draggable: true })
+        .setLngLat([p.lon, p.lat])
+        .addTo(map)
+      p.marker.remove()
+      p.marker = marker
+      marker.on('dragend', () => {
+        const lngLat = marker.getLngLat()
+        p.lat = lngLat.lat
+        p.lon = lngLat.lng
+      })
+    })
+  } else if (s.participants) {
+    addParticipantMarkers(s.participants)
+  }
+
+  if (animationId !== expectedId) return
+
+  // Isochrones
+  if (s.isochrones) {
+    s.isochrones.forEach((iso, i) => addIsochrone(i, iso))
+    markStep('isochrones', s.isochrones.length, s.isochrones.length)
+  }
+
+  if (animationId !== expectedId) return
+
+  // Intersection
+  if (s.intersection) {
+    const allIntersection = s.intersection.filter(p => polygonArea(p) > 0.0001)
+    const largestArea = allIntersection.length > 0
+      ? Math.max(...allIntersection.map(polygonArea))
+      : 0
+    const intersection = largestArea > 0
+      ? allIntersection.filter(p => polygonArea(p) >= largestArea * 0.1)
+      : allIntersection
+    addIntersection(intersection)
+    markStep('intersection', intersection.length > 1 ? intersection.length : undefined)
+  }
+
+  if (animationId !== expectedId) return
+
+  // Venues
+  if (s.venues) {
+    addVenueMarkers(s.venues)
+    markStep('venues', s.venues.length)
+    displayResults()
+    markStep('scored')
   }
 }
 
@@ -1065,7 +1144,7 @@ function addIsochrone(index, polygon) {
     id: `${id}-line`,
     type: 'line',
     source: id,
-    paint: { 'line-color': colour, 'line-width': 2, 'line-opacity': 0.8 },
+    paint: { 'line-color': colour, 'line-width': 1.5, 'line-opacity': 0.4 },
   })
 }
 
