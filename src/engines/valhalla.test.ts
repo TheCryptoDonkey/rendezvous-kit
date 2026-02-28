@@ -175,4 +175,143 @@ describe('ValhallaEngine', () => {
       }
     })
   })
+
+  describe('computeRoute', () => {
+    // Encoded polyline6 for [[-2.5879, 51.4545], [-2.5, 51.5]]
+    const mockShape = 'gapcaBvn}|CwzwAwtjD'
+
+    const mockRouteResponse = {
+      trip: {
+        summary: { time: 720, length: 8.5 },
+        legs: [{
+          shape: mockShape,
+          maneuvers: [
+            { instruction: 'Head north on A38', length: 5.2, time: 420 },
+            { instruction: 'Turn right onto M32', length: 3.3, time: 300 },
+          ],
+        }],
+      },
+    }
+
+    it('sends POST to /route and returns parsed route geometry', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockRouteResponse,
+      })
+
+      const origin = { lat: 51.4545, lon: -2.5879 }
+      const destination = { lat: 51.5, lon: -2.5 }
+      const result = await engine.computeRoute(origin, destination, 'drive')
+
+      // Verify request
+      const [url, init] = mockFetch.mock.calls[0]
+      expect(url).toBe('http://localhost:8002/route')
+      const body = JSON.parse((init as RequestInit).body as string)
+      expect(body.costing).toBe('auto')
+      expect(body.directions_type).toBe('maneuvers')
+      expect(body.locations).toEqual([
+        { lat: 51.4545, lon: -2.5879 },
+        { lat: 51.5, lon: -2.5 },
+      ])
+
+      // Verify response parsing
+      expect(result.origin).toEqual(origin)
+      expect(result.destination).toEqual(destination)
+      expect(result.mode).toBe('drive')
+      expect(result.durationMinutes).toBe(12) // 720s / 60
+      expect(result.distanceKm).toBe(8.5)
+      expect(result.geometry.type).toBe('LineString')
+      // polyline6 decodes to [lon, lat] pairs (GeoJSON standard)
+      expect(result.geometry.coordinates).toEqual([
+        [-2.5879, 51.4545],
+        [-2.5, 51.5],
+      ])
+    })
+
+    it('returns manoeuvres as legs with converted units', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockRouteResponse,
+      })
+
+      const result = await engine.computeRoute(
+        { lat: 51.4545, lon: -2.5879 },
+        { lat: 51.5, lon: -2.5 },
+        'drive'
+      )
+
+      expect(result.legs).toHaveLength(2)
+      expect(result.legs![0]).toEqual({
+        instruction: 'Head north on A38',
+        distanceKm: 5.2,
+        durationMinutes: 7, // 420s / 60
+      })
+      expect(result.legs![1]).toEqual({
+        instruction: 'Turn right onto M32',
+        distanceKm: 3.3,
+        durationMinutes: 5, // 300s / 60
+      })
+    })
+
+    it('uses correct costing for cycle mode', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockRouteResponse,
+      })
+
+      await engine.computeRoute(
+        { lat: 51.4545, lon: -2.5879 },
+        { lat: 51.5, lon: -2.5 },
+        'cycle'
+      )
+
+      const [, init] = mockFetch.mock.calls[0]
+      const body = JSON.parse((init as RequestInit).body as string)
+      expect(body.costing).toBe('bicycle')
+    })
+
+    it('throws ValhallaError on error response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false, status: 400, statusText: 'Bad Request',
+        text: async () => '{"error":"No route found"}',
+      })
+
+      try {
+        await engine.computeRoute(
+          { lat: 51.4545, lon: -2.5879 },
+          { lat: 51.5, lon: -2.5 },
+          'drive'
+        )
+        expect.fail('Expected ValhallaError')
+      } catch (err) {
+        expect(err).toBeInstanceOf(ValhallaError)
+        const ve = err as ValhallaError
+        expect(ve.status).toBe(400)
+        expect(ve.body).toBe('{"error":"No route found"}')
+      }
+    })
+
+    it('sends custom headers with route requests', async () => {
+      const customEngine = new ValhallaEngine({
+        baseUrl: 'http://localhost:8002',
+        headers: { 'X-Api-Key': 'route-key' },
+      })
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockRouteResponse,
+      })
+
+      await customEngine.computeRoute(
+        { lat: 51.4545, lon: -2.5879 },
+        { lat: 51.5, lon: -2.5 },
+        'drive'
+      )
+
+      const [, init] = mockFetch.mock.calls[0]
+      const headers = (init as RequestInit).headers as Record<string, string>
+      expect(headers['X-Api-Key']).toBe('route-key')
+      expect(headers['Content-Type']).toBe('application/json')
+    })
+  })
 })
