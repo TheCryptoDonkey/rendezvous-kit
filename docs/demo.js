@@ -854,7 +854,7 @@ async function loadScenario(name) {
   const res = await fetch(`scenarios/${name}.json`)
   if (!res.ok) {
     document.getElementById('results-list').innerHTML =
-      `<div class="result-card"><div class="result-info">Failed to load scenario: ${name}</div></div>`
+      `<div class="result-card"><div class="result-info">Failed to load scenario: ${esc(name)}</div></div>`
     return
   }
   currentScenario = await res.json()
