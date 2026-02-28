@@ -26,6 +26,7 @@ let selectedMode = 'drive'
 let selectedTime = 15
 let routeLayers = []              // track route layers for cleanup: { layerId, handlers: { click, mouseenter, mouseleave } }
 let routePopup = null             // active route popup
+let currentRoutes = new Map()     // participantIndex → RouteGeometry (for directions display)
 let routeGeneration = 0           // incremented on each venue selection to discard stale route results
 let paymentPollTimer = null       // setInterval ID
 const PARTICIPANT_LABELS = ['A', 'B', 'C', 'D', 'E']
@@ -956,6 +957,7 @@ function clearRouteLayers() {
   }
 
   routeLayers = []
+  currentRoutes.clear()
 }
 
 function addRouteLayer(participantIndex, route) {
@@ -1058,19 +1060,27 @@ async function showRoutesForVenue(venue) {
       handlePaymentRequired(firstPaymentErr)
       return
     }
+    currentRoutes.clear()
     for (const result of results) {
       if (result) {
         addRouteLayer(result.index, result.route)
+        currentRoutes.set(result.index, result.route)
       }
     }
+    renderDirections()
   } else if (currentScenario?.routes) {
     // Pre-baked routes from scenario
+    currentRoutes.clear()
     const venueRoutes = currentScenario.routes[venue.name]
     if (venueRoutes) {
       venueRoutes.forEach((route, i) => {
-        if (route) addRouteLayer(i, route)
+        if (route) {
+          addRouteLayer(i, route)
+          currentRoutes.set(i, route)
+        }
       })
     }
+    renderDirections()
   }
 }
 
