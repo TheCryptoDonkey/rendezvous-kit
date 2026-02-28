@@ -1,3 +1,10 @@
+## [1.10.5](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.4...v1.10.5) (2026-02-28)
+
+
+### Bug Fixes
+
+* remove position: relative that overrides MapLibre marker positioning ([3fbac0b](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/3fbac0b15c8630d8b3c402c1f25176e53d23395a))
+
 ## [1.10.4](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.3...v1.10.4) (2026-02-28)
 
 
