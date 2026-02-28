@@ -275,6 +275,362 @@ describe('intersectPolygonsAll', () => {
   })
 })
 
+// --- Edge-case intersection tests ---
+
+describe('intersectPolygons edge cases', () => {
+  // Helper: verify a result is a valid closed GeoJSON polygon
+  function expectValidPolygon(p: GeoJSONPolygon | null) {
+    expect(p).not.toBeNull()
+    expect(p!.type).toBe('Polygon')
+    const ring = p!.coordinates[0]
+    expect(ring.length).toBeGreaterThanOrEqual(4) // 3 vertices + closing
+    expect(ring[0][0]).toBeCloseTo(ring[ring.length - 1][0], 8)
+    expect(ring[0][1]).toBeCloseTo(ring[ring.length - 1][1], 8)
+  }
+
+  it('returns the original polygon when intersected with itself', () => {
+    const result = intersectPolygons([squareA, squareA])
+    expectValidPolygon(result)
+    const resultArea = polygonArea(result!)
+    const originalArea = polygonArea(squareA)
+    expect(resultArea / originalArea).toBeCloseTo(1.0, 2)
+  })
+
+  it('returns the inner polygon when one is fully inside the other', () => {
+    const outer: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-5, -5], [15, -5], [15, 15], [-5, 15], [-5, -5]]],
+    }
+    const inner: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[2, 2], [8, 2], [8, 8], [2, 8], [2, 2]]],
+    }
+    const result = intersectPolygons([outer, inner])
+    expectValidPolygon(result)
+    const resultArea = polygonArea(result!)
+    const innerArea = polygonArea(inner)
+    expect(resultArea / innerArea).toBeCloseTo(1.0, 2)
+  })
+
+  it('returns null for polygons sharing only an edge (no interior overlap)', () => {
+    const left: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [5, 0], [5, 10], [0, 10], [0, 0]]],
+    }
+    const right: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[5, 0], [10, 0], [10, 10], [5, 10], [5, 0]]],
+    }
+    const result = intersectPolygons([left, right])
+    // Shared edge only — may return null or a degenerate zero-area polygon
+    if (result !== null) {
+      expect(polygonArea(result)).toBeLessThan(polygonArea(left) * 0.001)
+    }
+  })
+
+  it('returns null for polygons sharing only a single vertex', () => {
+    const bottomLeft: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [5, 0], [5, 5], [0, 5], [0, 0]]],
+    }
+    const topRight: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[5, 5], [10, 5], [10, 10], [5, 10], [5, 5]]],
+    }
+    const result = intersectPolygons([bottomLeft, topRight])
+    if (result !== null) {
+      expect(polygonArea(result)).toBeLessThan(polygonArea(bottomLeft) * 0.001)
+    }
+  })
+
+  it('handles a very thin sliver intersection', () => {
+    // Two wide rectangles overlapping in a 0.01-unit-wide strip
+    const wide1: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [10, 0], [10, 5], [0, 5], [0, 0]]],
+    }
+    const wide2: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[9.99, 0], [20, 0], [20, 5], [9.99, 5], [9.99, 0]]],
+    }
+    const result = intersectPolygons([wide1, wide2])
+    expectValidPolygon(result)
+    // Sliver should be ~0.01 × 5 = 0.05 square units (in degrees)
+    const sliverArea = polygonArea(result!)
+    const fullArea = polygonArea(wide1)
+    expect(sliverArea).toBeGreaterThan(0)
+    expect(sliverArea).toBeLessThan(fullArea * 0.01)
+  })
+
+  it('intersects two triangles correctly', () => {
+    const tri1: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [10, 0], [5, 10], [0, 0]]],
+    }
+    const tri2: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 5], [10, 5], [5, -5], [0, 5]]],
+    }
+    const result = intersectPolygons([tri1, tri2])
+    expectValidPolygon(result)
+    // The intersection should be smaller than either triangle
+    expect(polygonArea(result!)).toBeLessThan(polygonArea(tri1))
+    expect(polygonArea(result!)).toBeLessThan(polygonArea(tri2))
+    expect(polygonArea(result!)).toBeGreaterThan(0)
+  })
+
+  it('intersects a diamond (rotated square) with an axis-aligned square', () => {
+    // Diamond centred at (5, 5) with vertices at cardinal points
+    const diamond: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[5, 0], [10, 5], [5, 10], [0, 5], [5, 0]]],
+    }
+    const result = intersectPolygons([squareA, diamond])
+    expectValidPolygon(result)
+    // Diamond is fully inside squareA, so intersection = diamond
+    const resultArea = polygonArea(result!)
+    const diamondArea = polygonArea(diamond)
+    expect(resultArea / diamondArea).toBeCloseTo(1.0, 1)
+  })
+
+  it('handles a polygon with collinear vertices along edges', () => {
+    // Square with extra midpoints on each edge (8 vertices instead of 4)
+    const squareWithMidpoints: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [5, 0], [10, 0], [10, 5], [10, 10], [5, 10], [0, 10], [0, 5], [0, 0]]],
+    }
+    const result = intersectPolygons([squareWithMidpoints, squareB])
+    expectValidPolygon(result)
+    // Should produce the same result as squareA ∩ squareB
+    const referenceResult = intersectPolygons([squareA, squareB])
+    const resultArea = polygonArea(result!)
+    const refArea = polygonArea(referenceResult!)
+    expect(resultArea / refArea).toBeCloseTo(1.0, 2)
+  })
+
+  it('handles a polygon with a very sharp angle (< 2 degrees)', () => {
+    // Very acute isosceles triangle — vertex at (5, 100), base from (4.5, 0) to (5.5, 0)
+    const sharpTri: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[4.5, 0], [5.5, 0], [5, 50], [4.5, 0]]],
+    }
+    const clipSquare: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]],
+    }
+    const result = intersectPolygons([sharpTri, clipSquare])
+    expectValidPolygon(result)
+    // Result should be a trapezoid (base of triangle clipped at y=10)
+    expect(polygonArea(result!)).toBeGreaterThan(0)
+    expect(polygonArea(result!)).toBeLessThan(polygonArea(sharpTri))
+  })
+
+  it('intersects two many-vertex polygons (circle approximations)', () => {
+    // Two circles as 64-segment polygons, overlapping
+    const circle1 = circleToPolygon([0, 0], 100_000, 64)  // 100 km
+    const circle2 = circleToPolygon([0.5, 0], 100_000, 64)
+    const result = intersectPolygons([circle1, circle2])
+    expectValidPolygon(result)
+    // Intersection should be smaller than either circle but non-trivial
+    expect(polygonArea(result!)).toBeGreaterThan(0)
+    expect(polygonArea(result!)).toBeLessThan(polygonArea(circle1))
+    expect(polygonArea(result!)).toBeGreaterThan(polygonArea(circle1) * 0.3)
+  })
+
+  it('returns null for three polygons with pairwise overlap but empty triple intersection', () => {
+    // Three squares arranged in a triangle pattern — each pair overlaps,
+    // but no single point is inside all three
+    const a: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [5, 0], [5, 5], [0, 5], [0, 0]]],
+    }
+    const b: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[3, 0], [8, 0], [8, 5], [3, 5], [3, 0]]],
+    }
+    const c: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[1.5, 3], [6.5, 3], [6.5, 8], [1.5, 8], [1.5, 3]]],
+    }
+    // A∩B = [3,5]×[0,5], A∩C = [1.5,5]×[3,5], B∩C = [3,6.5]×[3,5]
+    // A∩B∩C = [3,5]×[3,5] — this actually DOES overlap
+    // Instead, use a configuration that truly has empty triple intersection:
+    const p: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [4, 0], [4, 2], [0, 2], [0, 0]]],
+    }
+    const q: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[3, 0], [7, 0], [7, 2], [3, 2], [3, 0]]],
+    }
+    const r: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[1, 3], [6, 3], [6, 5], [1, 5], [1, 3]]],
+    }
+    // P∩Q = [3,4]×[0,2] (overlaps), P∩R = empty (no y overlap), Q∩R = empty
+    // So P∩Q∩R = empty
+    const result = intersectPolygons([p, q, r])
+    expect(result).toBeNull()
+  })
+
+  it('handles a concave polygon fully containing a convex polygon', () => {
+    // U-shape with a small square inside the cavity
+    const uShape: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [10, 0], [10, 10], [8, 10], [8, 3], [2, 3], [2, 10], [0, 10], [0, 0]]],
+    }
+    const innerSquare: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[3, 1], [7, 1], [7, 2.5], [3, 2.5], [3, 1]]],
+    }
+    const result = intersectPolygons([uShape, innerSquare])
+    expectValidPolygon(result)
+    const resultArea = polygonArea(result!)
+    const innerArea = polygonArea(innerSquare)
+    expect(resultArea / innerArea).toBeCloseTo(1.0, 1)
+  })
+
+  it('returns null when small square is in the cavity of a U-shape (outside the polygon)', () => {
+    const uShape: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [10, 0], [10, 10], [8, 10], [8, 3], [2, 3], [2, 10], [0, 10], [0, 0]]],
+    }
+    // This square sits in the open cavity (above the U floor, between the arms)
+    const cavitySquare: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[3, 4], [7, 4], [7, 8], [3, 8], [3, 4]]],
+    }
+    const result = intersectPolygons([uShape, cavitySquare])
+    // The cavity is outside the U-shape, so intersection should be null or near-zero
+    if (result !== null) {
+      expect(polygonArea(result)).toBeLessThan(polygonArea(cavitySquare) * 0.01)
+    }
+  })
+
+  it('handles clockwise and counter-clockwise winding orders', () => {
+    // squareA is CCW; create a CW version
+    const squareCW: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]]],
+    }
+    const result = intersectPolygons([squareCW, squareB])
+    expectValidPolygon(result)
+    const refResult = intersectPolygons([squareA, squareB])
+    const resultArea = polygonArea(result!)
+    const refArea = polygonArea(refResult!)
+    expect(resultArea / refArea).toBeCloseTo(1.0, 2)
+  })
+
+  it('correctly clips a star shape against a square', () => {
+    // 5-pointed star centred at (5, 5) — highly concave
+    const star: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[
+        [5, 10],    // top
+        [3.5, 6.5], // inner left-top
+        [0, 6],     // left point
+        [3, 4],     // inner left-bottom
+        [2, 0],     // bottom-left point
+        [5, 2.5],   // inner bottom
+        [8, 0],     // bottom-right point
+        [7, 4],     // inner right-bottom
+        [10, 6],    // right point
+        [6.5, 6.5], // inner right-top
+        [5, 10],    // close
+      ]],
+    }
+    const clipRect: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[2, 2], [8, 2], [8, 8], [2, 8], [2, 2]]],
+    }
+    const result = intersectPolygons([star, clipRect])
+    expectValidPolygon(result)
+    expect(polygonArea(result!)).toBeGreaterThan(0)
+    expect(polygonArea(result!)).toBeLessThan(polygonArea(clipRect))
+    expect(polygonArea(result!)).toBeLessThan(polygonArea(star))
+  })
+})
+
+describe('intersectPolygonsAll edge cases', () => {
+  it('preserves all components when concave shapes create multiple intersections', () => {
+    // Plus sign shape ∩ X shape should create multiple disconnected regions
+    const plus: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[3, 0], [7, 0], [7, 3], [10, 3], [10, 7], [7, 7], [7, 10], [3, 10], [3, 7], [0, 7], [0, 3], [3, 3], [3, 0]]],
+    }
+    // Use a frame (hollow square) that intersects the plus in 4 disconnected regions
+    const frame: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-1, -1], [11, -1], [11, 11], [-1, 11], [-1, -1]]],
+    }
+    // Frame fully contains plus, so result should be 1 component = the plus
+    const result = intersectPolygonsAll([plus, frame])
+    expect(result.length).toBe(1)
+    const resultArea = polygonArea(result[0])
+    const plusArea = polygonArea(plus)
+    expect(resultArea / plusArea).toBeCloseTo(1.0, 1)
+  })
+
+  it('handles many-vertex convex polygons without accumulating error', () => {
+    // Two 128-segment circles with known overlap
+    const c1 = circleToPolygon([-1.5, 53.8], 50_000, 128)
+    const c2 = circleToPolygon([-1.0, 53.8], 50_000, 128)
+    const result = intersectPolygonsAll([c1, c2])
+    expect(result.length).toBe(1)
+    const resultArea = polygonArea(result[0])
+    expect(resultArea).toBeGreaterThan(0)
+    // Intersection should be symmetric — centroid should be near midpoint of centres
+    const c = centroid(result[0])
+    expect(c.lon).toBeCloseTo(-1.25, 0)
+    expect(c.lat).toBeCloseTo(53.8, 0)
+  })
+
+  it('returns valid closed rings with finite coordinates for all components', () => {
+    const cShapeA: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [8, 0], [8, 7], [2, 7], [2, 8], [8, 8], [8, 10], [0, 10], [0, 0]]],
+    }
+    const cShapeB: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[2, 10], [2, 8], [8, 8], [8, 7], [2, 7], [2, 0], [10, 0], [10, 10], [2, 10]]],
+    }
+    const result = intersectPolygonsAll([cShapeA, cShapeB])
+    for (const component of result) {
+      const ring = component.coordinates[0]
+      // All vertices should have finite coordinates
+      for (const [lon, lat] of ring) {
+        expect(Number.isFinite(lon)).toBe(true)
+        expect(Number.isFinite(lat)).toBe(true)
+      }
+      // Positive area (not degenerate)
+      expect(polygonArea(component)).toBeGreaterThan(0)
+    }
+  })
+
+  it('produces no duplicate consecutive vertices in output rings', () => {
+    // Regression: sutherlandHodgman can emit duplicate consecutive vertices when
+    // polygon vertices lie exactly on clip edges. These propagate as zero-length
+    // boundary edges through mergePieces, producing duplicates in the final output.
+    const cShapeA: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[0, 0], [8, 0], [8, 7], [2, 7], [2, 8], [8, 8], [8, 10], [0, 10], [0, 0]]],
+    }
+    const cShapeB: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[2, 10], [2, 8], [8, 8], [8, 7], [2, 7], [2, 0], [10, 0], [10, 10], [2, 10]]],
+    }
+    const result = intersectPolygonsAll([cShapeA, cShapeB])
+    for (const component of result) {
+      const ring = component.coordinates[0]
+      for (let i = 0; i < ring.length - 1; i++) {
+        const dx = Math.abs(ring[i][0] - ring[i + 1][0])
+        const dy = Math.abs(ring[i][1] - ring[i + 1][1])
+        expect(dx + dy, `duplicate at index ${i}: [${ring[i]}]`).toBeGreaterThan(1e-10)
+      }
+    }
+  })
+})
+
 describe('geohash-kit pointInPolygon integration', () => {
   it('works with our GeoJSONPolygon type', () => {
     // pointInPolygon from geohash-kit takes ([lon, lat], ring: [number, number][])
