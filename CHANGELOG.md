@@ -1,3 +1,10 @@
+## [1.14.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.14.0...v1.14.1) (2026-02-28)
+
+
+### Bug Fixes
+
+* pin esm.sh import to rendezvous-kit@1.14.0 for enriched directions ([3595973](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/3595973d550d79650b836521f7a1fc07a2ab3261))
+
 # [1.14.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.13.0...v1.14.0) (2026-02-28)
 
 
