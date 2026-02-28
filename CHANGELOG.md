@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.6...v1.11.0) (2026-02-28)
+
+
+### Features
+
+* demo UX overhaul — fix bugs, add credit display and theme toggle ([3776a8f](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/3776a8f67e7c02da5c110768fa625ccc3bd13d95))
+
 ## [1.10.6](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.5...v1.10.6) (2026-02-28)
 
 
