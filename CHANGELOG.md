@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.5...v1.12.0) (2026-02-28)
+
+
+### Features
+
+* add Overpass API fallback endpoints and timeout ([a8fb8f5](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/a8fb8f52732029e0e634d27ebfd9cbb801cd5a91))
+
 ## [1.11.5](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.4...v1.11.5) (2026-02-28)
 
 
