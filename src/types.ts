@@ -17,6 +17,12 @@ export interface GeoJSONPolygon {
   coordinates: number[][][]
 }
 
+/** GeoJSON LineString geometry. */
+export interface GeoJSONLineString {
+  type: 'LineString'
+  coordinates: number[][]
+}
+
 /** Result of an isochrone computation. */
 export interface Isochrone {
   origin: LatLon
@@ -52,6 +58,24 @@ export interface Venue {
   osmId?: string
 }
 
+/** A single manoeuvre in a route. */
+export interface RouteLeg {
+  instruction: string
+  distanceKm: number
+  durationMinutes: number
+}
+
+/** Result of a single route computation. */
+export interface RouteGeometry {
+  origin: LatLon
+  destination: LatLon
+  mode: TransportMode
+  durationMinutes: number
+  distanceKm: number
+  geometry: GeoJSONLineString
+  legs?: RouteLeg[]
+}
+
 /** Options for rendezvous calculation. */
 export interface RendezvousOptions {
   participants: LatLon[]
@@ -82,4 +106,7 @@ export interface RoutingEngine {
 
   /** Compute a travel time/distance matrix between origins and destinations. */
   computeRouteMatrix(origins: LatLon[], destinations: LatLon[], mode: TransportMode): Promise<RouteMatrix>
+
+  /** Compute a route between two points, returning the polyline and optional turn-by-turn legs. */
+  computeRoute(origin: LatLon, destination: LatLon, mode: TransportMode): Promise<RouteGeometry>
 }
