@@ -1,5 +1,5 @@
 import type {
-  RoutingEngine, Isochrone, RouteMatrix, MatrixEntry,
+  RoutingEngine, Isochrone, RouteMatrix, RouteGeometry, MatrixEntry,
   TransportMode, LatLon, GeoJSONPolygon,
 } from '../types.js'
 
@@ -103,5 +103,9 @@ export class GraphHopperEngine implements RoutingEngine {
     }
 
     return { origins, destinations, entries }
+  }
+
+  async computeRoute(): Promise<RouteGeometry> {
+    throw new Error('computeRoute is not yet implemented for GraphHopper')
   }
 }
