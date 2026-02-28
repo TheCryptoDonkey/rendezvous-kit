@@ -994,7 +994,7 @@ footer {
 
 /* --- Route popups --- */
 .route-popup-container.maplibregl-popup {
-  z-index: 100;
+  z-index: 9999 !important;
 }
 
 .route-popup-container .maplibregl-popup-content {
