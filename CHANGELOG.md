@@ -1,3 +1,10 @@
+## [1.10.6](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.5...v1.10.6) (2026-02-28)
+
+
+### Bug Fixes
+
+* add cache-busting query strings to CSS and JS references ([57caeae](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/57caeae1305871c2a93cd2fda1bdc8b7b0b51b89))
+
 ## [1.10.5](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.4...v1.10.5) (2026-02-28)
 
 
