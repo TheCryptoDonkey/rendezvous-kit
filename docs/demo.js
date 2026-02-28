@@ -24,7 +24,7 @@ let interactiveEngine = null      // ValhallaEngine instance
 let interactiveResults = null     // results from last interactive run
 let selectedMode = 'drive'
 let selectedTime = 15
-let routeLayers = []              // track route layer IDs for cleanup
+let routeLayers = []              // track route layers for cleanup: { layerId, handlers: { click, mouseenter, mouseleave } }
 let routePopup = null             // active route popup
 let paymentPollTimer = null       // setInterval ID
 const PARTICIPANT_LABELS = ['A', 'B', 'C', 'D', 'E']
@@ -203,11 +203,15 @@ function switchMode(isInteractive) {
     interactiveResults = null
     map.getCanvas().style.cursor = 'crosshair'
     document.getElementById('code-content').textContent = ''
+    // Sync interactive fairness picker to current value
+    document.getElementById('interactive-fairness').value = currentFairness
   } else {
     interactivePanel.classList.add('hidden')
     showcasePanel.classList.remove('hidden')
     clearInteractive()
     map.getCanvas().style.cursor = ''
+    // Sync showcase fairness picker to current value
+    document.getElementById('fairness-picker').value = currentFairness
     // Reload current scenario
     const picker = document.getElementById('scenario-picker')
     loadScenario(picker.value)
@@ -719,12 +723,15 @@ function clearRouteLayers() {
   const style = map.getStyle()
   if (!style) return
 
-  for (const layerId of routeLayers) {
+  for (const { layerId, handlers } of routeLayers) {
+    map.off('click', layerId, handlers.click)
+    map.off('mouseenter', layerId, handlers.mouseenter)
+    map.off('mouseleave', layerId, handlers.mouseleave)
     try { map.removeLayer(layerId) } catch (_) { /* already removed */ }
   }
 
   // Remove corresponding sources
-  for (const layerId of routeLayers) {
+  for (const { layerId } of routeLayers) {
     const sourceId = layerId.replace(/-line$/, '')
     try { map.removeSource(sourceId) } catch (_) { /* already removed */ }
   }
@@ -762,10 +769,8 @@ function addRouteLayer(participantIndex, route) {
     },
   })
 
-  routeLayers.push(layerId)
-
-  // Click handler for directions popup
-  map.on('click', layerId, (e) => {
+  // Named handler references so they can be removed in clearRouteLayers()
+  const clickHandler = (e) => {
     e.originalEvent.stopPropagation()
 
     const label = interactiveMode
@@ -787,15 +792,24 @@ function addRouteLayer(participantIndex, route) {
       .setLngLat(e.lngLat)
       .setHTML(html)
       .addTo(map)
-  })
+  }
+
+  const mouseenterHandler = () => {
+    map.getCanvas().style.cursor = 'pointer'
+  }
+
+  const mouseleaveHandler = () => {
+    map.getCanvas().style.cursor = interactiveMode ? 'crosshair' : ''
+  }
+
+  // Click handler for directions popup
+  map.on('click', layerId, clickHandler)
 
   // Cursor change on hover
-  map.on('mouseenter', layerId, () => {
-    map.getCanvas().style.cursor = 'pointer'
-  })
-  map.on('mouseleave', layerId, () => {
-    map.getCanvas().style.cursor = interactiveMode ? 'crosshair' : ''
-  })
+  map.on('mouseenter', layerId, mouseenterHandler)
+  map.on('mouseleave', layerId, mouseleaveHandler)
+
+  routeLayers.push({ layerId, handlers: { click: clickHandler, mouseenter: mouseenterHandler, mouseleave: mouseleaveHandler } })
 }
 
 async function showRoutesForVenue(venue) {
