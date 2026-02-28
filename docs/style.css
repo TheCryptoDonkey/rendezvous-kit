@@ -836,5 +836,24 @@ footer {
     max-width: none;
     border-left: none;
     border-top: 1px solid var(--border);
+    padding-bottom: 72px;
+  }
+
+  .action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .action-bar .btn-find,
+  .action-bar .btn-clear {
+    flex: 1;
   }
 }
