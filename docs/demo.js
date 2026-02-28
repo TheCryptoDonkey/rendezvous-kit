@@ -1506,11 +1506,18 @@ function renderDirections() {
   // Remove any existing directions sections
   document.querySelectorAll('.directions-section').forEach(el => el.remove())
 
+  console.error('[DEBUG] renderDirections called, currentRoutes.size =', currentRoutes.size)
   if (currentRoutes.size === 0) return
 
   // Find the selected result card
   const selectedCard = document.querySelector('.result-card.selected')
+  console.error('[DEBUG] selectedCard =', selectedCard)
   if (!selectedCard) return
+
+  // Debug: log first route's legs
+  for (const [index, route] of currentRoutes) {
+    console.error(`[DEBUG] Route ${index}: ${route.legs?.length ?? 0} legs, first leg type=${route.legs?.[0]?.type}, streets=${route.legs?.[0]?.streetNames}`)
+  }
 
   // Build directions HTML
   const participants = interactiveMode
