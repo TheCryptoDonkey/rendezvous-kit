@@ -1,3 +1,10 @@
+## [1.16.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.16.1...v1.16.2) (2026-02-28)
+
+
+### Bug Fixes
+
+* force all map markers below popup with z-index override ([eebf6c9](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/eebf6c90f593e2b7fad5448239dce843825c65f6))
+
 ## [1.16.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.16.0...v1.16.1) (2026-02-28)
 
 
