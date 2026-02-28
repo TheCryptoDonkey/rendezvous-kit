@@ -1329,6 +1329,7 @@ function clearSelection() {
   }
   clearParticipantHighlight()
   clearRouteLayers()
+  document.querySelectorAll('.directions-section').forEach(el => el.remove())
 }
 
 // --- Pipeline animation ---
@@ -1435,6 +1436,76 @@ function scoreLabel(strategy) {
 
 function scoreUnit(strategy) {
   return strategy === 'min_variance' ? '' : ' min'
+}
+
+function renderDirections() {
+  // Remove any existing directions sections
+  document.querySelectorAll('.directions-section').forEach(el => el.remove())
+
+  if (currentRoutes.size === 0) return
+
+  // Find the selected result card
+  const selectedCard = document.querySelector('.result-card.selected')
+  if (!selectedCard) return
+
+  // Build directions HTML
+  const participants = interactiveMode
+    ? interactiveParticipants
+    : (currentScenario?.participants ?? [])
+
+  const section = document.createElement('div')
+  section.className = 'directions-section'
+
+  for (const [index, route] of currentRoutes) {
+    const label = participants[index]?.label ?? PARTICIPANT_LABELS[index]
+    const colour = COLOURS[index % COLOURS.length]
+    const hasLegs = route.legs && route.legs.length > 0
+
+    const block = document.createElement('div')
+    block.className = 'directions-block'
+
+    const header = document.createElement('button')
+    header.className = 'directions-header'
+    header.innerHTML = `
+      <span class="directions-dot" style="background:${colour}"></span>
+      <span class="directions-label">${esc(label)}</span>
+      <span class="directions-summary">${route.durationMinutes.toFixed(1)} min · ${route.distanceKm.toFixed(1)} km</span>
+      <span class="directions-toggle">${hasLegs ? '▶' : ''}</span>
+    `
+
+    block.appendChild(header)
+
+    if (hasLegs) {
+      const body = document.createElement('div')
+      body.className = 'directions-body collapsed'
+
+      const ol = document.createElement('ol')
+      ol.className = 'directions-legs'
+      for (const leg of route.legs) {
+        const li = document.createElement('li')
+        li.className = 'directions-leg'
+        li.innerHTML = `
+          <span class="leg-instruction">${esc(leg.instruction)}</span>
+          <span class="leg-meta">${leg.distanceKm.toFixed(2)} km · ${leg.durationMinutes.toFixed(1)} min</span>
+        `
+        ol.appendChild(li)
+      }
+      body.appendChild(ol)
+      block.appendChild(body)
+
+      header.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const isCollapsed = body.classList.contains('collapsed')
+        body.classList.toggle('collapsed')
+        header.querySelector('.directions-toggle').textContent = isCollapsed ? '▼' : '▶'
+      })
+    }
+
+    section.appendChild(block)
+  }
+
+  // Append directions section inside the selected result card
+  selectedCard.appendChild(section)
 }
 
 function displayResults() {
