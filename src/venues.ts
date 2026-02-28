@@ -1,6 +1,9 @@
 import type { GeoJSONPolygon, Venue, VenueType } from './types.js'
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+]
 
 /** Map VenueType to Overpass tag queries. */
 const VENUE_TAG_MAP: Record<string, string> = {
@@ -47,37 +50,50 @@ export async function searchVenues(
     .join('\n')
 
   const query = `[out:json][timeout:25];(\n${tagQueries}\n);out body;`
+  const body = `data=${encodeURIComponent(query)}`
 
-  const response = await fetch(overpassUrl ?? OVERPASS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `data=${encodeURIComponent(query)}`,
-  })
+  const endpoints = overpassUrl ? [overpassUrl] : OVERPASS_ENDPOINTS
+  let lastError: Error | undefined
 
-  if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`Overpass API error ${response.status}: ${text}`)
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+        signal: AbortSignal.timeout(30_000),
+      })
+
+      if (response.ok) {
+        const data = await response.json() as {
+          elements: Array<{
+            type: string
+            id: number
+            lat: number
+            lon: number
+            tags: Record<string, string>
+          }>
+        }
+
+        return data.elements
+          .filter(el => el.tags?.name)
+          .map(el => ({
+            name: el.tags.name,
+            lat: el.lat,
+            lon: el.lon,
+            venueType: inferVenueType(el.tags, venueTypes),
+            osmId: `${el.type}/${el.id}`,
+          }))
+      }
+
+      // 429 or 5xx — try next endpoint
+      lastError = new Error(`Overpass API error ${response.status}`)
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
+    }
   }
 
-  const data = await response.json() as {
-    elements: Array<{
-      type: string
-      id: number
-      lat: number
-      lon: number
-      tags: Record<string, string>
-    }>
-  }
-
-  return data.elements
-    .filter(el => el.tags?.name)
-    .map(el => ({
-      name: el.tags.name,
-      lat: el.lat,
-      lon: el.lon,
-      venueType: inferVenueType(el.tags, venueTypes),
-      osmId: `${el.type}/${el.id}`,
-    }))
+  throw lastError ?? new Error('All Overpass endpoints failed')
 }
 
 function inferVenueType(tags: Record<string, string>, requested: VenueType[]): VenueType {
