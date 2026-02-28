@@ -1,3 +1,10 @@
+## [1.11.3](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.2...v1.11.3) (2026-02-28)
+
+
+### Bug Fixes
+
+* soften isochrone borders, block stale participants, fix theme swap ([ee40db5](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/ee40db573fa0e42e5e01f713222bfd45a91e9244))
+
 ## [1.11.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.1...v1.11.2) (2026-02-28)
 
 
