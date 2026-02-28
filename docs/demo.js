@@ -1135,13 +1135,6 @@ function addIsochrone(index, polygon) {
     source: id,
     paint: { 'fill-color': colour, 'fill-opacity': 0.12 },
   })
-
-  map.addLayer({
-    id: `${id}-line`,
-    type: 'line',
-    source: id,
-    paint: { 'line-color': colour, 'line-width': 1.5, 'line-opacity': 0.4 },
-  })
 }
 
 function addIntersection(polygons) {
@@ -1294,12 +1287,8 @@ function selectParticipant(index) {
     const id = `demo-iso-${i}`
     if (i === index) {
       map.setPaintProperty(`${id}-fill`, 'fill-opacity', 0.25)
-      map.setPaintProperty(`${id}-line`, 'line-opacity', 1)
-      map.setPaintProperty(`${id}-line`, 'line-width', 3)
     } else {
       map.setPaintProperty(`${id}-fill`, 'fill-opacity', 0.04)
-      map.setPaintProperty(`${id}-line`, 'line-opacity', 0.15)
-      map.setPaintProperty(`${id}-line`, 'line-width', 1)
     }
   }
 }
@@ -1317,8 +1306,6 @@ function clearParticipantHighlight() {
     const id = `demo-iso-${i}`
     try {
       map.setPaintProperty(`${id}-fill`, 'fill-opacity', 0.12)
-      map.setPaintProperty(`${id}-line`, 'line-opacity', 0.4)
-      map.setPaintProperty(`${id}-line`, 'line-width', 1.5)
     } catch (_) { /* layer may not exist yet during animation */ }
   }
 }
