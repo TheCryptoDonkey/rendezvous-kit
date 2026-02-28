@@ -1096,10 +1096,14 @@ function addRouteLayer(participantIndex, route) {
     </div>`
 
     if (routePopup) routePopup.remove()
+    document.getElementById('map').classList.add('popup-open')
     routePopup = new maplibregl.Popup({ closeOnClick: true, className: 'route-popup-container' })
       .setLngLat(e.lngLat)
       .setHTML(html)
       .addTo(map)
+    routePopup.on('close', () => {
+      document.getElementById('map').classList.remove('popup-open')
+    })
   }
 
   const mouseenterHandler = () => {
