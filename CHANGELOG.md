@@ -1,3 +1,10 @@
+## [1.10.4](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.3...v1.10.4) (2026-02-28)
+
+
+### Bug Fixes
+
+* remove intersection sliver outlines from map display ([a312d72](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/a312d728d01d567274f885e87a2e8e6792fc6bed))
+
 ## [1.10.3](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.2...v1.10.3) (2026-02-28)
 
 
