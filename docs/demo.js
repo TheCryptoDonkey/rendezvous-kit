@@ -374,6 +374,17 @@ function hideError() {
 
 // --- Live interactive pipeline ---
 
+function polygonArea(polygon) {
+  // Shoelace formula for polygon area (absolute value)
+  const ring = polygon.coordinates[0]
+  if (!ring || ring.length < 4) return 0
+  let area = 0
+  for (let i = 0; i < ring.length - 1; i++) {
+    area += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1]
+  }
+  return Math.abs(area) / 2
+}
+
 function envelopePolygon(polygons) {
   // Merge all polygon coordinates into a single bounding polygon
   // Used for venue search area when intersection is valid
@@ -494,7 +505,9 @@ async function runInteractive() {
     if (animationId !== thisAnimation) return
 
     // Step 2: Intersect polygons
-    const intersection = intersectPolygonsAll(isochrones)
+    const rawIntersection = intersectPolygonsAll(isochrones)
+    // Filter out degenerate polygon fragments (slivers from clipping)
+    const intersection = rawIntersection.filter(p => polygonArea(p) > 0.000001)
     if (intersection.length === 0) {
       showError('No common reachable area found. Try increasing the time budget or moving participants closer together.')
       resetFindButton()
@@ -551,12 +564,20 @@ async function runInteractive() {
       return
     }
 
+    // Sort by current fairness strategy and keep top 5
+    scoredVenues.sort((a, b) => {
+      const timesA = Object.values(a.travelTimes)
+      const timesB = Object.values(b.travelTimes)
+      return Math.max(...timesA) - Math.max(...timesB)
+    })
+    const topVenues = scoredVenues.slice(0, 5)
+
     // Build scenario-compatible object for displayResults
     currentScenario = {
       participants: origins,
       isochrones,
       intersection,
-      venues: scoredVenues,
+      venues: topVenues,
       mode: selectedMode,
       maxTimeMinutes: selectedTime,
       venueTypes,
@@ -817,6 +838,7 @@ async function showRoutesForVenue(venue) {
 
   if (interactiveMode && interactiveEngine) {
     // Live route computation
+    let firstPaymentErr = null
     const promises = interactiveParticipants.map((p, i) =>
       interactiveEngine.computeRoute(
         { lat: p.lat, lon: p.lon },
@@ -824,12 +846,18 @@ async function showRoutesForVenue(venue) {
         selectedMode
       ).then(route => ({ index: i, route }))
         .catch(err => {
-          console.error(`Route computation failed for participant ${p.label}:`, err)
+          if (err instanceof ValhallaError && err.status === 402 && !firstPaymentErr) {
+            firstPaymentErr = err
+          }
           return null
         })
     )
 
     const results = await Promise.all(promises)
+    if (firstPaymentErr) {
+      handlePaymentRequired(firstPaymentErr)
+      return
+    }
     for (const result of results) {
       if (result) {
         addRouteLayer(result.index, result.route)
