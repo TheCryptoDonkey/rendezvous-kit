@@ -1,3 +1,19 @@
+# [1.13.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.12.0...v1.13.0) (2026-02-28)
+
+
+### Bug Fixes
+
+* cancel in-flight animation on mode switch ([82d350e](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/82d350ecaecc9b61cd2df463eaff85a14c217cab))
+
+
+### Features
+
+* render turn-by-turn directions in expanded result cards ([119dd78](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/119dd78e41fc63ca782122dc7324c73f48b7af12))
+* sticky action bar on mobile for Find/Clear buttons ([f665922](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/f665922f98f4b8af0f6cfc18e3c0a91412aaea2d))
+* store route data for turn-by-turn directions display ([f356531](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/f35653119c9aec109f8ac3ea80a5667cf3322f7e))
+* style turn-by-turn directions UI in result cards ([13ce1ca](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/13ce1ca73ce9528ce4461b6b209f72afb7ad171a))
+* use self-hosted Overpass API for venue search ([b2e6405](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/b2e640512d3875faf1d20a1154b07b30504f2b4d))
+
 # [1.12.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.5...v1.12.0) (2026-02-28)
 
 
