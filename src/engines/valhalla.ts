@@ -3,6 +3,11 @@ import type {
   TransportMode, LatLon, GeoJSONPolygon, RouteLeg,
 } from '../types.js'
 
+/**
+ * Error thrown by ValhallaEngine when the server returns a non-200 response.
+ * Includes the HTTP status code and response body for error handling
+ * (e.g. detecting 402 Payment Required for L402 flows).
+ */
 export class ValhallaError extends Error {
   constructor(
     message: string,
