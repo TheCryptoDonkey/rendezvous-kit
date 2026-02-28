@@ -199,6 +199,19 @@ export class ValhallaEngine implements RoutingEngine {
             instruction: string
             length: number
             time: number
+            type?: number
+            street_names?: string[]
+            begin_street_names?: string[]
+            verbal_pre_transition_instruction?: string
+            toll?: boolean
+            highway?: boolean
+            ferry?: boolean
+            rough?: boolean
+            gate?: boolean
+            bearing_before?: number
+            bearing_after?: number
+            begin_shape_index?: number
+            end_shape_index?: number
           }>
         }>
       }
@@ -211,6 +224,19 @@ export class ValhallaEngine implements RoutingEngine {
       instruction: m.instruction,
       distanceKm: m.length,
       durationMinutes: m.time / 60,
+      type: m.type,
+      streetNames: m.street_names?.length ? m.street_names : undefined,
+      beginStreetNames: m.begin_street_names?.length ? m.begin_street_names : undefined,
+      verbalInstruction: m.verbal_pre_transition_instruction || undefined,
+      toll: m.toll || undefined,
+      highway: m.highway || undefined,
+      ferry: m.ferry || undefined,
+      rough: m.rough || undefined,
+      gate: m.gate || undefined,
+      bearingBefore: m.bearing_before,
+      bearingAfter: m.bearing_after,
+      beginShapeIndex: m.begin_shape_index,
+      endShapeIndex: m.end_shape_index,
     }))
 
     return {
