@@ -356,6 +356,7 @@ function reRenderScenario(expectedId) {
 // --- Mode switching ---
 
 function switchMode(isInteractive) {
+  ++animationId  // Cancel any in-flight showcase animation
   interactiveMode = isInteractive
 
   const showcasePanel = document.getElementById('showcase-panel')
