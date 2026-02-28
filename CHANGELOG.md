@@ -1,3 +1,10 @@
+## [1.10.3](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.2...v1.10.3) (2026-02-28)
+
+
+### Bug Fixes
+
+* venue positioning, marker stability, and matrix overflow ([cbad5de](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/cbad5de87b6793bd8736046f3cc4188443f6ac72))
+
 ## [1.10.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.1...v1.10.2) (2026-02-28)
 
 
