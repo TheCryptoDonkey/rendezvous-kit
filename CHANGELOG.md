@@ -1,3 +1,10 @@
+## [1.16.3](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.16.2...v1.16.3) (2026-02-28)
+
+
+### Bug Fixes
+
+* fade out markers when route popup is open so nothing obscures it ([4655c3d](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/4655c3db477816e7dd1fd2b6b33a1ab3fc3b6ec8))
+
 ## [1.16.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.16.1...v1.16.2) (2026-02-28)
 
 
