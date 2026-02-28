@@ -993,6 +993,11 @@ footer {
 }
 
 /* --- Route popups --- */
+/* Force all markers below popups — MapLibre sets inline z-index on markers */
+.maplibregl-marker {
+  z-index: 1 !important;
+}
+
 .route-popup-container.maplibregl-popup {
   z-index: 9999 !important;
 }
