@@ -17,6 +17,9 @@ export type {
   RendezvousSuggestion,
 } from './types.js'
 
+// Values
+export { ManoeuvreType } from './types.js'
+
 // Geometry
 export {
   intersectPolygons,
