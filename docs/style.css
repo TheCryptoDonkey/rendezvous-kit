@@ -147,9 +147,9 @@ main {
 }
 
 aside#panel {
-  flex: 3;
-  min-width: 280px;
-  max-width: 360px;
+  flex: 4;
+  min-width: 320px;
+  max-width: 480px;
   background: var(--bg-panel);
   border-left: 1px solid var(--border);
   overflow-y: auto;
@@ -351,14 +351,14 @@ select:focus:not(:focus-visible) { outline: none; }
 .directions-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
-  padding: 6px 0;
+  padding: 8px 0;
   background: none;
   border: none;
   color: var(--text);
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 15px;
   cursor: pointer;
   text-align: left;
   transition: color 0.2s;
@@ -386,9 +386,9 @@ select:focus:not(:focus-visible) { outline: none; }
 }
 
 .directions-toggle {
-  width: 14px;
+  width: 16px;
   text-align: center;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-dim);
 }
 
@@ -432,21 +432,21 @@ select:focus:not(:focus-visible) { outline: none; }
 /* Step number circle */
 .step-marker {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .step-number {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: 2px solid var(--route-colour, var(--accent));
   background: var(--bg-panel);
   color: var(--text);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -458,8 +458,8 @@ select:focus:not(:focus-visible) { outline: none; }
 /* Manoeuvre icon */
 .directions-step .step-icon {
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -475,21 +475,21 @@ select:focus:not(:focus-visible) { outline: none; }
 }
 
 .step-instruction {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text);
   line-height: 1.4;
 }
 
 .step-streets {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .step-meta {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-dim);
-  margin-top: 2px;
+  margin-top: 3px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -514,7 +514,7 @@ select:focus:not(:focus-visible) { outline: none; }
 }
 
 .step-badge {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
   padding: 1px 5px;
@@ -995,20 +995,22 @@ footer {
 /* --- Route popups --- */
 .route-popup {
   font-family: var(--font);
-  font-size: 12px;
-  max-width: 220px;
+  font-size: 14px;
+  max-width: 360px;
 }
 
-.route-popup .leg {
+.route-popup-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 0;
+  gap: 8px;
+  padding: 4px 0 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
 }
 
 .route-popup .leg-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -1016,6 +1018,61 @@ footer {
 .route-popup .leg-info {
   color: var(--text);
   line-height: 1.3;
+  font-weight: 600;
+}
+
+.route-popup-legs {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.route-popup-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.route-popup-step:last-child {
+  border-bottom: none;
+}
+
+.popup-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.popup-icon svg {
+  display: block;
+}
+
+.popup-step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.popup-instruction {
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.popup-streets {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.popup-meta {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
 }
 
 /* --- Utility --- */
