@@ -1,3 +1,11 @@
+## [1.11.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.1...v1.11.2) (2026-02-28)
+
+
+### Bug Fixes
+
+* fetch version from npm registry instead of hardcoding ([afea2bf](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/afea2bfb1ae27b58961229a9c0eadaa48a7dcde0))
+* update version badge and cache-busting params ([e1fb0cd](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/e1fb0cde492c4d84cc4d8de890125eae4a943a32))
+
 ## [1.11.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.0...v1.11.1) (2026-02-28)
 
 
