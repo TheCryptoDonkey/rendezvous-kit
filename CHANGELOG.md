@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.0...v1.11.1) (2026-02-28)
+
+
+### Bug Fixes
+
+* marker positioning, intersection lines, and theme swap ([71e33fc](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/71e33fc962134bae0912544a3a06395f3c3f6676))
+
 # [1.11.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.6...v1.11.0) (2026-02-28)
 
 
