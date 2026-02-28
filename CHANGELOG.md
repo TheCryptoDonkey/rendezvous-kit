@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.14.1...v1.15.0) (2026-02-28)
+
+
+### Features
+
+* bigger panel and text, rich turn-by-turn in route popups ([58eb174](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/58eb17447ab2728bfff14fe3359e8e92a70b8548))
+
 ## [1.14.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.14.0...v1.14.1) (2026-02-28)
 
 
