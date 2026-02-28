@@ -2,7 +2,7 @@
 // Uses global maplibregl from CDN script tag
 
 import { ValhallaEngine, ValhallaError, intersectPolygonsAll, searchVenues }
-  from 'https://esm.sh/rendezvous-kit@1.10.0'
+  from 'https://esm.sh/rendezvous-kit'
 
 import qrcode from 'https://esm.sh/qrcode-generator@1.4.4'
 
@@ -36,25 +36,10 @@ const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
 
 // --- Credit balance tracking ---
-// Intercept fetch to capture X-Credit-Balance from toll-booth responses
+// The fetch interceptor lives in index.html (classic script, runs before modules).
+// It calls window._creditUpdate when it sees X-Credit-Balance or X-Free-Remaining.
 
-const _origFetch = window.fetch
-window.fetch = async function (...args) {
-  const res = await _origFetch.apply(this, args)
-  const url = typeof args[0] === 'string' ? args[0] : args[0]?.url ?? ''
-  if (url.startsWith(VALHALLA_URL)) {
-    const creditBalance = res.headers.get('X-Credit-Balance')
-    const freeRemaining = res.headers.get('X-Free-Remaining')
-    if (creditBalance !== null) {
-      updateCreditDisplay('sats', parseInt(creditBalance, 10))
-    } else if (freeRemaining !== null) {
-      updateCreditDisplay('free', parseInt(freeRemaining, 10))
-    }
-  }
-  return res
-}
-
-function updateCreditDisplay(type, remaining) {
+window._creditUpdate = function (type, remaining) {
   const el = document.getElementById('credit-balance')
   if (!el) return
   if (type === 'sats') {
@@ -262,27 +247,38 @@ function applyTheme(theme) {
     const center = map.getCenter()
     const zoom = map.getZoom()
 
-    // Cancel running animations and clear DOM markers before setStyle
+    // Cancel running animations and clear ALL markers before setStyle
     // (setStyle removes layers/sources but NOT marker DOM elements)
     animationId++
     participantMarkers.forEach(pm => pm.marker.remove())
     participantMarkers = []
     venueMarkers.forEach(vm => vm.marker.remove())
     venueMarkers = []
+    // Also clear interactive participant markers (stored separately)
+    interactiveParticipants.forEach(p => { if (p.marker) p.marker.remove() })
     selectedParticipant = null
     clearRouteLayers()
     resetPipeline()
 
+    const savedScenario = currentScenario
+
     map.setStyle(style)
-    map.once('style.load', () => {
+
+    // Wait for the new style to be fully loaded before re-adding layers
+    function waitAndRender() {
+      if (!map.isStyleLoaded()) {
+        requestAnimationFrame(waitAndRender)
+        return
+      }
       map.setCenter(center)
       map.setZoom(zoom)
-      if (currentScenario) {
-        // Re-render all layers after style swap (works for both modes)
+      if (savedScenario) {
+        currentScenario = savedScenario
         const thisAnimation = ++animationId
         reRenderScenario(thisAnimation)
       }
-    })
+    }
+    requestAnimationFrame(waitAndRender)
   }
 }
 
@@ -310,7 +306,7 @@ function reRenderScenario(expectedId) {
       const marker = new maplibregl.Marker({ element: el, draggable: true })
         .setLngLat([p.lon, p.lat])
         .addTo(map)
-      p.marker.remove()
+      // Old marker was already removed in applyTheme
       p.marker = marker
       marker.on('dragend', () => {
         const lngLat = marker.getLngLat()
@@ -1302,7 +1298,7 @@ function selectParticipant(index) {
       map.setPaintProperty(`${id}-line`, 'line-width', 3)
     } else {
       map.setPaintProperty(`${id}-fill`, 'fill-opacity', 0.04)
-      map.setPaintProperty(`${id}-line`, 'line-opacity', 0.3)
+      map.setPaintProperty(`${id}-line`, 'line-opacity', 0.15)
       map.setPaintProperty(`${id}-line`, 'line-width', 1)
     }
   }
@@ -1321,8 +1317,8 @@ function clearParticipantHighlight() {
     const id = `demo-iso-${i}`
     try {
       map.setPaintProperty(`${id}-fill`, 'fill-opacity', 0.12)
-      map.setPaintProperty(`${id}-line`, 'line-opacity', 0.8)
-      map.setPaintProperty(`${id}-line`, 'line-width', 2)
+      map.setPaintProperty(`${id}-line`, 'line-opacity', 0.4)
+      map.setPaintProperty(`${id}-line`, 'line-width', 1.5)
     } catch (_) { /* layer may not exist yet during animation */ }
   }
 }
