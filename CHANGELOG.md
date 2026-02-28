@@ -1,3 +1,10 @@
+## [1.10.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.1...v1.10.2) (2026-02-28)
+
+
+### Bug Fixes
+
+* use topVenues for markers, increase area threshold, filter zero travel times ([62c6d7c](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/62c6d7c561fa1a125930c7a006934fb6d5fb2f4f))
+
 ## [1.10.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.0...v1.10.1) (2026-02-28)
 
 
