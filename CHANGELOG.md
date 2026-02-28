@@ -1,3 +1,10 @@
+## [1.11.4](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.3...v1.11.4) (2026-02-28)
+
+
+### Bug Fixes
+
+* unpin esm.sh import, fix theme swap and credit display ([77ffc09](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/77ffc094361718379dcae3b98c660135ff693719))
+
 ## [1.11.3](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.2...v1.11.3) (2026-02-28)
 
 
