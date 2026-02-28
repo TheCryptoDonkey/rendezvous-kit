@@ -1,4 +1,4 @@
-import type { RoutingEngine, Isochrone, RouteMatrix, LatLon, TransportMode } from '../types.js'
+import type { RoutingEngine, Isochrone, RouteMatrix, RouteGeometry, LatLon, TransportMode } from '../types.js'
 
 const ORS_BASE = 'https://api.openrouteservice.org'
 
@@ -121,5 +121,9 @@ export class OpenRouteServiceEngine implements RoutingEngine {
     }
 
     return { origins, destinations, entries }
+  }
+
+  async computeRoute(): Promise<RouteGeometry> {
+    throw new Error('computeRoute is not yet implemented for OpenRouteService')
   }
 }
