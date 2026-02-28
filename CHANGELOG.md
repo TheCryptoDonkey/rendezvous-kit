@@ -1,3 +1,14 @@
+# [1.14.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.13.0...v1.14.0) (2026-02-28)
+
+
+### Features
+
+* add manoeuvre icons, badges, and timeline to directions UI ([c3b6609](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/c3b660951e05e0810ad8e5d344d617b3d269ac12))
+* enrich RouteLeg type with manoeuvre details and road attributes ([488231e](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/488231efb836effe32d5a5d2b4134b1fe25d9d0e))
+* export ManoeuvreType from barrel ([96e82b3](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/96e82b3ff12f2bd35aa600ccb13df8513b37d783))
+* map enriched manoeuvre fields from Valhalla to RouteLeg ([73e242e](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/73e242e23509a9941834378e94145967c311319e))
+* style enriched directions with timeline, icons, badges, and progress ([515a436](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/515a436dce5b49a12284ce7cf7eb66dca37c2ab1))
+
 # [1.13.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.12.0...v1.13.0) (2026-02-28)
 
 
