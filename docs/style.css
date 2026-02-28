@@ -335,7 +335,7 @@ select:focus:not(:focus-visible) { outline: none; }
 .time-hot { color: var(--venue); font-weight: 600; }
 .time-cool { color: var(--score); font-weight: 600; }
 
-/* --- Directions (turn-by-turn in result cards) --- */
+/* --- Directions UI --- */
 .directions-section {
   width: 100%;
   margin-top: 8px;
@@ -394,7 +394,7 @@ select:focus:not(:focus-visible) { outline: none; }
 
 .directions-body {
   overflow: hidden;
-  max-height: 500px;
+  max-height: 600px;
   transition: max-height 0.3s ease;
 }
 
@@ -402,29 +402,154 @@ select:focus:not(:focus-visible) { outline: none; }
   max-height: 0;
 }
 
-.directions-legs {
-  list-style: none;
-  padding: 0 0 6px 14px;
+/* Timeline container */
+.directions-timeline {
+  padding: 0 0 6px 0;
+  position: relative;
 }
 
-.directions-leg {
+/* Individual step row */
+.directions-step {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 3px 0;
-  border-left: 2px solid var(--border);
-  padding-left: 10px;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  position: relative;
 }
 
-.leg-instruction {
+/* Vertical connector line between steps */
+.directions-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 26px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--route-colour, var(--border));
+  opacity: 0.4;
+}
+
+/* Step number circle */
+.step-marker {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-number {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--route-colour, var(--accent));
+  background: var(--bg-panel);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Manoeuvre icon */
+.directions-step .step-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.directions-step .step-icon svg {
+  display: block;
+}
+
+/* Step content area */
+.step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-instruction {
   font-size: 13px;
   color: var(--text);
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
-.leg-meta {
+.step-streets {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.step-meta {
   font-size: 11px;
   color: var(--text-dim);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-progress {
+  color: var(--text-dim);
+  opacity: 0.7;
+}
+
+.step-progress::before {
+  content: '—';
+  margin-right: 6px;
+}
+
+/* Road attribute badges */
+.step-badges {
+  display: flex;
+  gap: 4px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+
+.step-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.badge-toll {
+  background: #f59e0b22;
+  color: #f59e0b;
+  border: 1px solid #f59e0b44;
+}
+
+.badge-highway {
+  background: #3b82f622;
+  color: #3b82f6;
+  border: 1px solid #3b82f644;
+}
+
+.badge-ferry {
+  background: #14b8a622;
+  color: #14b8a6;
+  border: 1px solid #14b8a644;
+}
+
+.badge-rough {
+  background: #a1682222;
+  color: #a16822;
+  border: 1px solid #a1682244;
+}
+
+.badge-gate {
+  background: #6b728022;
+  color: #9ca3af;
+  border: 1px solid #6b728044;
 }
 
 /* --- Footer / Code Panel --- */
