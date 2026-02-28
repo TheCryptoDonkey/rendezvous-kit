@@ -66,6 +66,7 @@ function computeFairness(times, strategy) {
 }
 
 function envelopePolygon(polygons) {
+  if (polygons.length === 0) throw new Error('envelopePolygon requires at least one polygon')
   if (polygons.length === 1) return polygons[0]
 
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity
@@ -224,7 +225,7 @@ async function regenerateScenario(engine, filePath) {
       } catch (err) {
         if (err.status === 402) {
           console.error('\n  ERROR: 402 Payment Required')
-          console.error('  Set L402_TOKEN=macaroon:preimage to authenticate requests.')
+          console.error('  Set L402_TOKEN=macaroon:preimage to authenticate requests.\n')
           process.exit(1)
         }
         console.warn(`    WARNING: Route computation failed for ${p.label}: ${err.message}`)
