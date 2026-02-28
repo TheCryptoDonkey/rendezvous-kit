@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>rendezvous-kit — Interactive Demo</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="style.css?v=1.11.2">
+  <link rel="stylesheet" href="style.css?v=1.11.4">
 </head>
 <body>
   <header>
@@ -144,6 +144,26 @@
   </footer>
 
   <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
-  <script type="module" src="demo.js?v=1.11.2"></script>
+  <script>
+    // Intercept fetch BEFORE ES modules load (modules capture globals at init)
+    // to read credit/free-tier headers from toll-booth responses
+    (function() {
+      var VALHALLA = 'https://routing.trotters.cc';
+      var orig = window.fetch;
+      window.fetch = function() {
+        return orig.apply(this, arguments).then(function(res) {
+          var url = typeof arguments[0] === 'string' ? arguments[0] : (arguments[0] && arguments[0].url) || '';
+          if (url.indexOf(VALHALLA) === 0) {
+            var credit = res.headers.get('X-Credit-Balance');
+            var free = res.headers.get('X-Free-Remaining');
+            if (credit !== null) window._creditUpdate && window._creditUpdate('sats', parseInt(credit, 10));
+            else if (free !== null) window._creditUpdate && window._creditUpdate('free', parseInt(free, 10));
+          }
+          return res;
+        });
+      };
+    })();
+  </script>
+  <script type="module" src="demo.js?v=1.11.4"></script>
 </body>
 </html>
