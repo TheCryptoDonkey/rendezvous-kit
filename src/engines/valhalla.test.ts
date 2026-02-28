@@ -186,8 +186,28 @@ describe('ValhallaEngine', () => {
         legs: [{
           shape: mockShape,
           maneuvers: [
-            { instruction: 'Head north on A38', length: 5.2, time: 420 },
-            { instruction: 'Turn right onto M32', length: 3.3, time: 300 },
+            {
+              instruction: 'Head north on A38',
+              length: 5.2,
+              time: 420,
+              type: 1,
+              street_names: ['A38'],
+              bearing_before: 0,
+              bearing_after: 10,
+              begin_shape_index: 0,
+              end_shape_index: 1,
+            },
+            {
+              instruction: 'Turn right onto M32',
+              length: 3.3,
+              time: 300,
+              type: 10,
+              street_names: ['M32'],
+              bearing_before: 10,
+              bearing_after: 90,
+              begin_shape_index: 1,
+              end_shape_index: 2,
+            },
           ],
         }],
       },
@@ -245,11 +265,37 @@ describe('ValhallaEngine', () => {
         instruction: 'Head north on A38',
         distanceKm: 5.2,
         durationMinutes: 7, // 420s / 60
+        type: 1,
+        streetNames: ['A38'],
+        beginStreetNames: undefined,
+        verbalInstruction: undefined,
+        toll: undefined,
+        highway: undefined,
+        ferry: undefined,
+        rough: undefined,
+        gate: undefined,
+        bearingBefore: 0,
+        bearingAfter: 10,
+        beginShapeIndex: 0,
+        endShapeIndex: 1,
       })
       expect(result.legs![1]).toEqual({
         instruction: 'Turn right onto M32',
         distanceKm: 3.3,
         durationMinutes: 5, // 300s / 60
+        type: 10,
+        streetNames: ['M32'],
+        beginStreetNames: undefined,
+        verbalInstruction: undefined,
+        toll: undefined,
+        highway: undefined,
+        ferry: undefined,
+        rough: undefined,
+        gate: undefined,
+        bearingBefore: 10,
+        bearingAfter: 90,
+        beginShapeIndex: 1,
+        endShapeIndex: 2,
       })
     })
 
@@ -317,7 +363,7 @@ describe('ValhallaEngine', () => {
     it('preserves fractional minutes without rounding', async () => {
       const engine = new ValhallaEngine({ baseUrl: 'http://localhost:8002' })
 
-      const mockFetch = vi.fn().mockResolvedValue({
+      const localFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
           trip: {
@@ -333,7 +379,7 @@ describe('ValhallaEngine', () => {
           },
         }),
       })
-      vi.stubGlobal('fetch', mockFetch)
+      vi.stubGlobal('fetch', localFetch)
 
       const result = await engine.computeRoute(
         { lat: 51.456, lon: -2.626 },
@@ -344,7 +390,123 @@ describe('ValhallaEngine', () => {
       expect(result.durationMinutes).toBeCloseTo(7.0833, 3)
       expect(result.legs![0].durationMinutes).toBeCloseTo(7.0833, 3)
 
+      // Restore the outer mockFetch (unstubAllGlobals removes all stubs)
       vi.unstubAllGlobals()
+      vi.stubGlobal('fetch', mockFetch)
+    })
+
+    it('maps enriched manoeuvre fields to RouteLeg', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          trip: {
+            summary: { time: 900, length: 12.0 },
+            legs: [{
+              shape: mockShape,
+              maneuvers: [
+                {
+                  instruction: 'Head north on A38.',
+                  length: 5.2,
+                  time: 420,
+                  type: 1,
+                  street_names: ['A38'],
+                  begin_street_names: ['Park Street'],
+                  verbal_pre_transition_instruction: 'Head north on A38 for 5 kilometres.',
+                  toll: false,
+                  highway: true,
+                  ferry: false,
+                  rough: false,
+                  gate: false,
+                  bearing_before: 0,
+                  bearing_after: 15,
+                  begin_shape_index: 0,
+                  end_shape_index: 1,
+                },
+                {
+                  instruction: 'Take the ferry to Aust.',
+                  length: 6.8,
+                  time: 480,
+                  type: 28,
+                  street_names: [],
+                  verbal_pre_transition_instruction: 'Take the ferry to Aust.',
+                  toll: true,
+                  highway: false,
+                  ferry: true,
+                  rough: false,
+                  gate: true,
+                  bearing_before: 15,
+                  bearing_after: 350,
+                  begin_shape_index: 1,
+                  end_shape_index: 2,
+                },
+              ],
+            }],
+          },
+        }),
+      })
+
+      const result = await engine.computeRoute(
+        { lat: 51.4545, lon: -2.5879 },
+        { lat: 51.5, lon: -2.5 },
+        'drive'
+      )
+
+      expect(result.legs).toHaveLength(2)
+
+      // First leg: highway, no toll
+      const leg0 = result.legs![0]
+      expect(leg0.type).toBe(1)
+      expect(leg0.streetNames).toEqual(['A38'])
+      expect(leg0.beginStreetNames).toEqual(['Park Street'])
+      expect(leg0.verbalInstruction).toBe('Head north on A38 for 5 kilometres.')
+      expect(leg0.toll).toBeUndefined()       // false → omitted
+      expect(leg0.highway).toBe(true)
+      expect(leg0.ferry).toBeUndefined()       // false → omitted
+      expect(leg0.rough).toBeUndefined()       // false → omitted
+      expect(leg0.gate).toBeUndefined()        // false → omitted
+      expect(leg0.bearingBefore).toBe(0)
+      expect(leg0.bearingAfter).toBe(15)
+      expect(leg0.beginShapeIndex).toBe(0)
+      expect(leg0.endShapeIndex).toBe(1)
+
+      // Second leg: toll + ferry + gate
+      const leg1 = result.legs![1]
+      expect(leg1.type).toBe(28)
+      expect(leg1.toll).toBe(true)
+      expect(leg1.ferry).toBe(true)
+      expect(leg1.gate).toBe(true)
+      expect(leg1.highway).toBeUndefined()     // false → omitted
+    })
+
+    it('omits streetNames when Valhalla returns empty array', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          trip: {
+            summary: { time: 60, length: 1.0 },
+            legs: [{
+              shape: mockShape,
+              maneuvers: [{
+                instruction: 'Head north.',
+                length: 1.0,
+                time: 60,
+                type: 1,
+                street_names: [],
+                begin_shape_index: 0,
+                end_shape_index: 1,
+              }],
+            }],
+          },
+        }),
+      })
+
+      const result = await engine.computeRoute(
+        { lat: 51.4545, lon: -2.5879 },
+        { lat: 51.5, lon: -2.5 },
+        'drive'
+      )
+
+      expect(result.legs![0].streetNames).toBeUndefined()
     })
   })
 })
