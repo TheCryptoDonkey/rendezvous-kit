@@ -507,7 +507,7 @@ async function runInteractive() {
     // Step 2: Intersect polygons
     const rawIntersection = intersectPolygonsAll(isochrones)
     // Filter out degenerate polygon fragments (slivers from clipping)
-    const intersection = rawIntersection.filter(p => polygonArea(p) > 0.000001)
+    const intersection = rawIntersection.filter(p => polygonArea(p) > 0.0001)
     if (intersection.length === 0) {
       showError('No common reachable area found. Try increasing the time budget or moving participants closer together.')
       resetFindButton()
@@ -527,7 +527,7 @@ async function runInteractive() {
       resetFindButton()
       return
     }
-    markStep('venues', venues.length)
+    markStep('venues')
 
     if (animationId !== thisAnimation) return
 
@@ -554,8 +554,9 @@ async function runInteractive() {
         travelTimes,
       }
     }).filter(v => {
-      // Filter out venues with unreachable travel times
-      return Object.values(v.travelTimes).every(t => t >= 0)
+      // Filter out venues with unreachable or zero travel times
+      const times = Object.values(v.travelTimes)
+      return times.every(t => t > 0)
     })
 
     if (scoredVenues.length === 0) {
@@ -584,7 +585,8 @@ async function runInteractive() {
     }
     interactiveResults = currentScenario
 
-    addVenueMarkers(scoredVenues)
+    addVenueMarkers(topVenues)
+    markStep('venues', topVenues.length)
     displayResults()
     markStep('scored')
 
