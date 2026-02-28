@@ -1,3 +1,10 @@
+## [1.10.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.10.0...v1.10.1) (2026-02-28)
+
+
+### Bug Fixes
+
+* filter degenerate intersection polygons, limit venues to top 5, handle route 402 with payment panel ([10cc97e](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/10cc97e5584ea789da3bb45114f24b98128ef0e3))
+
 # [1.10.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.9.0...v1.10.0) (2026-02-28)
 
 
