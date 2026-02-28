@@ -186,7 +186,22 @@ function sutherlandHodgman(subject: Point[], clip: Point[]): Point[] {
     }
   }
 
-  return output
+  return deduplicateConsecutive(output)
+}
+
+/** Remove consecutive duplicate points (including wrap-around: last vs first). */
+function deduplicateConsecutive(ring: Point[]): Point[] {
+  if (ring.length <= 1) return ring
+  const EPS = 1e-9
+  const eq = (a: Point, b: Point) =>
+    Math.abs(a[0] - b[0]) < EPS && Math.abs(a[1] - b[1]) < EPS
+  const out: Point[] = [ring[0]]
+  for (let i = 1; i < ring.length; i++) {
+    if (!eq(ring[i], out[out.length - 1])) out.push(ring[i])
+  }
+  // Also check wrap-around: if last == first, drop last
+  if (out.length > 1 && eq(out[out.length - 1], out[0])) out.pop()
+  return out
 }
 
 function isLeft(a: Point, b: Point, p: Point): boolean {
