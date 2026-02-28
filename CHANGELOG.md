@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.15.0...v1.16.0) (2026-02-28)
+
+
+### Features
+
+* prominent route popup with high z-index, shadow, and bigger text ([e98a577](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/e98a57758dced14ef6dd67dfc2c4ebd99984237c))
+
 # [1.15.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.14.1...v1.15.0) (2026-02-28)
 
 
