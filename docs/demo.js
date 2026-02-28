@@ -33,6 +33,70 @@ const PARTICIPANT_LABELS = ['A', 'B', 'C', 'D', 'E']
 const VALHALLA_URL = 'https://routing.trotters.cc'
 const OVERPASS_URL = 'https://overpass.trotters.cc/api/interpreter'
 const L402_STORAGE_KEY = 'rendezvous-l402'
+
+// --- Manoeuvre type → SVG icon map ---
+// Valhalla type values: https://valhalla.github.io/valhalla/api/turn-by-turn/api-reference/
+const MANOEUVRE_ICONS = {
+  // Start / destination
+  1: `<svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="5" fill="currentColor"/></svg>`,
+  2: `<svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="5" fill="currentColor"/></svg>`,
+  3: `<svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="5" fill="currentColor"/></svg>`,
+  4: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M8 1a5 5 0 0 0-5 5c0 4 5 9 5 9s5-5 5-9a5 5 0 0 0-5-5zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" fill="currentColor"/></svg>`,
+  5: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M8 1a5 5 0 0 0-5 5c0 4 5 9 5 9s5-5 5-9a5 5 0 0 0-5-5zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" fill="currentColor"/></svg>`,
+  6: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M8 1a5 5 0 0 0-5 5c0 4 5 9 5 9s5-5 5-9a5 5 0 0 0-5-5zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" fill="currentColor"/></svg>`,
+  // Straight
+  8: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M8 2v12M8 2l-3 3M8 2l3 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Slight right
+  9: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M6 14V6l5-3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3l3 0 0 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Right
+  10: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M4 4v4a4 4 0 0 0 4 4h4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 8l3 4-3 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Sharp right
+  11: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M4 3v11l7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 10V7H8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // U-turn right
+  12: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M5 14V6a3 3 0 0 1 6 0v8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10l3 4 3-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // U-turn left
+  13: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M11 14V6a3 3 0 0 0-6 0v8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10l-3 4-3-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Sharp left
+  14: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M12 3v11L5 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10V7h3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Left
+  15: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M12 4v4a4 4 0 0 1-4 4H4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 8l-3 4 3 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Slight left
+  16: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M10 14V6L5 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3l-3 0 0 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Ramp straight / right / left
+  17: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M8 2v12M8 2l-3 3M8 2l3 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 2"/></svg>`,
+  18: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M4 4v4a4 4 0 0 0 4 4h4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 2"/><path d="M9 8l3 4-3 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  19: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M12 4v4a4 4 0 0 1-4 4H4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 2"/><path d="M7 8l-3 4 3 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Merge
+  25: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M4 14l4-6 4-6M12 14l-4-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Roundabout enter / exit
+  26: `<svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="7" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M8 11v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10.8 9.8l1.5 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  27: `<svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="7" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M8 11v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8 2l-2 2M8 2l2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Ferry enter / exit
+  28: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M3 10c1-1 2-1 3 0s2 1 3 0 2-1 3 0M4 6l4-4 4 4M8 2v7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  29: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M3 10c1-1 2-1 3 0s2 1 3 0 2-1 3 0M4 6l4-4 4 4M8 2v7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Merge right / left
+  37: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M4 14l4-6 4-6M12 14l-4-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  38: `<svg viewBox="0 0 16 16" width="16" height="16"><path d="M12 14l-4-6-4-6M4 14l4-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+}
+
+// Fallback icon for unknown manoeuvre types
+const MANOEUVRE_ICON_DEFAULT = `<svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="3" fill="currentColor"/></svg>`
+
+function getManoeuvreIcon(type) {
+  if (type == null) return MANOEUVRE_ICON_DEFAULT
+  return MANOEUVRE_ICONS[type] ?? MANOEUVRE_ICON_DEFAULT
+}
+
+function renderBadges(leg) {
+  const badges = []
+  if (leg.toll) badges.push('<span class="step-badge badge-toll">TOLL</span>')
+  if (leg.highway) badges.push('<span class="step-badge badge-highway">MOTORWAY</span>')
+  if (leg.ferry) badges.push('<span class="step-badge badge-ferry">FERRY</span>')
+  if (leg.rough) badges.push('<span class="step-badge badge-rough">UNPAVED</span>')
+  if (leg.gate) badges.push('<span class="step-badge badge-gate">GATE</span>')
+  return badges.length ? `<div class="step-badges">${badges.join('')}</div>` : ''
+}
+
 const THEME_KEY = 'rendezvous-theme'
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
@@ -1479,18 +1543,64 @@ function renderDirections() {
       const body = document.createElement('div')
       body.className = 'directions-body collapsed'
 
-      const ol = document.createElement('ol')
-      ol.className = 'directions-legs'
-      for (const leg of route.legs) {
-        const li = document.createElement('li')
-        li.className = 'directions-leg'
-        li.innerHTML = `
-          <span class="leg-instruction">${esc(leg.instruction)}</span>
-          <span class="leg-meta">${leg.distanceKm.toFixed(2)} km · ${leg.durationMinutes.toFixed(1)} min</span>
+      const timeline = document.createElement('div')
+      timeline.className = 'directions-timeline'
+      timeline.style.setProperty('--route-colour', colour)
+
+      let cumulativeKm = 0
+      let cumulativeMin = 0
+
+      route.legs.forEach((leg, i) => {
+        cumulativeKm += leg.distanceKm
+        cumulativeMin += leg.durationMinutes
+
+        const step = document.createElement('div')
+        step.className = 'directions-step'
+
+        const stepNum = i + 1
+        const icon = getManoeuvreIcon(leg.type)
+
+        // Instruction: prefer verbalInstruction if available and longer
+        const instructionText = (leg.verbalInstruction && leg.verbalInstruction.length > leg.instruction.length)
+          ? leg.verbalInstruction
+          : leg.instruction
+
+        // Street names (only show if not already present in the instruction)
+        let streetsHtml = ''
+        const names = leg.streetNames ?? leg.beginStreetNames
+        if (names && names.length > 0) {
+          const joined = names.join(' / ')
+          if (!instructionText.includes(joined) && !names.every(n => instructionText.includes(n))) {
+            streetsHtml = `<div class="step-streets">${esc(joined)}</div>`
+          }
+        }
+
+        // Badges
+        const badgesHtml = renderBadges(leg)
+
+        // Progress line
+        const progressHtml = `<div class="step-meta">
+          ${leg.distanceKm.toFixed(2)} km · ${leg.durationMinutes.toFixed(1)} min
+          <span class="step-progress">${cumulativeKm.toFixed(1)} of ${route.distanceKm.toFixed(1)} km</span>
+        </div>`
+
+        step.innerHTML = `
+          <div class="step-marker">
+            <span class="step-number">${stepNum}</span>
+          </div>
+          <div class="step-icon">${icon}</div>
+          <div class="step-content">
+            <div class="step-instruction">${esc(instructionText)}</div>
+            ${streetsHtml}
+            ${badgesHtml}
+            ${progressHtml}
+          </div>
         `
-        ol.appendChild(li)
-      }
-      body.appendChild(ol)
+
+        timeline.appendChild(step)
+      })
+
+      body.appendChild(timeline)
       block.appendChild(body)
 
       header.addEventListener('click', (e) => {
