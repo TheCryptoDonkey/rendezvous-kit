@@ -30,6 +30,7 @@ let routeGeneration = 0           // incremented on each venue selection to disc
 let paymentPollTimer = null       // setInterval ID
 const PARTICIPANT_LABELS = ['A', 'B', 'C', 'D', 'E']
 const VALHALLA_URL = 'https://routing.trotters.cc'
+const OVERPASS_URL = 'https://overpass.trotters.cc/api/interpreter'
 const L402_STORAGE_KEY = 'rendezvous-l402'
 const THEME_KEY = 'rendezvous-theme'
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
@@ -710,7 +711,7 @@ async function runInteractive() {
 
     // Step 3: Search venues within the bounding box, then filter to those inside the intersection
     const searchArea = envelopePolygon(intersection)
-    const rawVenues = await searchVenues(searchArea, venueTypes)
+    const rawVenues = await searchVenues(searchArea, venueTypes, OVERPASS_URL)
     const venues = rawVenues.filter(v => pointInAnyPolygon(v.lon, v.lat, intersection))
 
     if (venues.length === 0) {
