@@ -26,7 +26,7 @@
   <main>
     <div id="map"></div>
     <aside id="panel">
-      <section class="controls">
+      <section id="showcase-panel" class="controls">
         <div class="control-group">
           <label for="scenario-picker">Scenario</label>
           <select id="scenario-picker">
@@ -53,6 +53,52 @@
           </select>
           <span id="fairness-desc" class="control-hint">Minimise worst-case travel time</span>
         </div>
+      </section>
+
+      <section id="interactive-panel" class="controls hidden">
+        <div class="control-group">
+          <span class="control-group-label">Participants</span>
+          <div id="participant-list">
+            <span class="control-hint">Click the map to place 2–5 markers</span>
+          </div>
+        </div>
+        <div class="control-group">
+          <span class="control-group-label">Transport</span>
+          <div class="mode-buttons">
+            <button class="mode-btn active" data-mode="drive">🚗 Drive</button>
+            <button class="mode-btn" data-mode="cycle">🚲 Cycle</button>
+            <button class="mode-btn" data-mode="walk">🚶 Walk</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label for="time-slider">Time budget</label>
+          <div class="slider-row">
+            <input type="range" id="time-slider" min="5" max="60" value="15" step="1">
+            <span id="time-value">15 min</span>
+          </div>
+        </div>
+        <div class="control-group">
+          <span class="control-group-label">Venue types</span>
+          <div class="venue-checkboxes">
+            <label><input type="checkbox" value="cafe" checked> Cafe</label>
+            <label><input type="checkbox" value="restaurant"> Restaurant</label>
+            <label><input type="checkbox" value="park"> Park</label>
+            <label><input type="checkbox" value="pub" checked> Pub</label>
+          </div>
+        </div>
+        <div class="control-group">
+          <label for="interactive-fairness">Fairness strategy</label>
+          <select id="interactive-fairness">
+            <option value="min_max">min_max</option>
+            <option value="min_total">min_total</option>
+            <option value="min_variance">min_variance</option>
+          </select>
+          <span id="interactive-fairness-desc" class="control-hint">Minimise worst-case travel time</span>
+        </div>
+        <button id="btn-find" class="btn-find" disabled>Find rendezvous</button>
+        <button id="btn-clear" class="btn-clear">Clear all</button>
+        <div id="interactive-error" class="error-message hidden"></div>
+        <div id="payment-panel" class="payment-panel hidden"></div>
       </section>
 
       <section class="pipeline">
@@ -93,17 +139,6 @@
       <pre><code id="code-content"></code></pre>
     </details>
   </footer>
-
-  <div id="interactive-overlay" class="overlay hidden">
-    <div class="overlay-content">
-      <h2>Interactive Mode</h2>
-      <p>Coming soon — Valhalla instance being set up on trotters.cc</p>
-      <p class="overlay-subtext">Explore the pre-baked scenarios in Showcase mode.</p>
-      <button class="overlay-back" onclick="document.querySelector('.tab[data-tab=&quot;showcase&quot;]').click()">Back to Showcase</button>
-      <br>
-      <a href="https://github.com/TheCryptoDonkey/rendezvous-kit#engines" class="overlay-link">Self-hosting docs →</a>
-    </div>
-  </div>
 
   <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
   <script type="module" src="demo.js"></script>
