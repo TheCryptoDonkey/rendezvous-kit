@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.16.0...v1.16.1) (2026-02-28)
+
+
+### Bug Fixes
+
+* route popup z-index to 9999 so it sits above all markers and labels ([6ecaed3](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/6ecaed3aada255376a25f9d06ef808bd40e9773c))
+
 # [1.16.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.15.0...v1.16.0) (2026-02-28)
 
 
