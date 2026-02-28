@@ -3,6 +3,17 @@ import type {
   TransportMode, LatLon, GeoJSONPolygon,
 } from '../types.js'
 
+export class ValhallaError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly body: string,
+  ) {
+    super(message)
+    this.name = 'ValhallaError'
+  }
+}
+
 const COSTING: Record<TransportMode, string> = {
   drive: 'auto',
   cycle: 'bicycle',
@@ -24,9 +35,11 @@ const COSTING: Record<TransportMode, string> = {
 export class ValhallaEngine implements RoutingEngine {
   readonly name = 'Valhalla'
   private readonly baseUrl: string
+  private readonly extraHeaders: Record<string, string>
 
-  constructor(config: { baseUrl: string }) {
+  constructor(config: { baseUrl: string; headers?: Record<string, string> }) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '')
+    this.extraHeaders = config.headers ?? {}
   }
 
   async computeIsochrone(
@@ -43,13 +56,13 @@ export class ValhallaEngine implements RoutingEngine {
 
     const res = await fetch(`${this.baseUrl}/isochrone`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...this.extraHeaders },
       body: JSON.stringify(body),
     })
 
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new Error(`Valhalla isochrone error: ${res.status} ${res.statusText} — ${text}`)
+      throw new ValhallaError(`Valhalla isochrone error: ${res.status} ${res.statusText} — ${text}`, res.status, text)
     }
 
     const data = (await res.json()) as {
@@ -81,13 +94,13 @@ export class ValhallaEngine implements RoutingEngine {
 
     const res = await fetch(`${this.baseUrl}/sources_to_targets`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...this.extraHeaders },
       body: JSON.stringify(body),
     })
 
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new Error(`Valhalla matrix error: ${res.status} ${res.statusText} — ${text}`)
+      throw new ValhallaError(`Valhalla matrix error: ${res.status} ${res.statusText} — ${text}`, res.status, text)
     }
 
     const data = (await res.json()) as {

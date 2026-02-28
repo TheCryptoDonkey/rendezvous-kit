@@ -31,7 +31,7 @@ export type { BBox, Coordinate } from './geo.js'
 
 // Engines
 export { OpenRouteServiceEngine } from './engines/openrouteservice.js'
-export { ValhallaEngine } from './engines/valhalla.js'
+export { ValhallaEngine, ValhallaError } from './engines/valhalla.js'
 export { GraphHopperEngine } from './engines/graphhopper.js'
 export { OsrmEngine } from './engines/osrm.js'
 
