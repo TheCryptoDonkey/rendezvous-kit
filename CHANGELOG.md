@@ -1,3 +1,25 @@
+# [1.10.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.9.0...v1.10.0) (2026-02-28)
+
+
+### Bug Fixes
+
+* add empty guard to envelopePolygon and consistent error messages ([bbe91f2](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/bbe91f23febb496c3d8caf44382e84729d51d338))
+* address code review — JSDoc, stub params, fractional duration test ([b1962a8](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/b1962a861e52a515b8afece79082f47e0f6bf6af))
+* clean up route listeners, sync fairness pickers, add alert role ([3f78f17](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/3f78f17f54339b292d1d2723e50e0e99ee1312b8)), closes [#interactive-error](https://github.com/TheCryptoDonkey/rendezvous-kit/issues/interactive-error)
+* deduplicate consecutive vertices in sutherlandHodgman output ([a955dd9](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/a955dd962abc4ea35b463fe1d6f38ccaee31d30e))
+* escape scenario name in error path for consistent XSS prevention ([fef9f8e](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/fef9f8e939c3efba72428a3dba904b9e34182770))
+
+
+### Features
+
+* add route types (GeoJSONLineString, RouteLeg, RouteGeometry) and computeRoute to RoutingEngine ([eeabf2d](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/eeabf2d4b64a087e4407e05200887899bc418a42))
+* add scenario regeneration script for real Valhalla data ([8bf818c](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/8bf818c3a2635bc6230a9565da488c33cab1b1fc))
+* add stub computeRoute to OpenRouteService, GraphHopper, and OSRM engines ([c9d9f18](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/c9d9f18d128167f2b214f412b409cdb852d07290))
+* add ValhallaError class, custom headers support, and typed error handling ([8cbc4eb](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/8cbc4ebde50dc42c07b0e07229c1faf1d5d187b7))
+* implement computeRoute in ValhallaEngine with polyline6 decoder and manoeuvre legs ([314c4fe](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/314c4fe2b3938f9cc2682ae98b4af8cd84c2f992))
+* interactive mode — tab switching, markers, live pipeline ([1281f5c](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/1281f5c31657061d147e7b15d087e204e409805d))
+* interactive mode HTML structure and CSS styles ([21522de](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/21522de0a415da5cc24845cb4a1c1b2439f06dc7))
+
 # [1.9.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.8.0...v1.9.0) (2026-02-27)
 
 
