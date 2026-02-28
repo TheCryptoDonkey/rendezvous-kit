@@ -2,6 +2,7 @@
 export type {
   LatLon,
   GeoJSONPolygon,
+  GeoJSONLineString,
   TransportMode,
   FairnessStrategy,
   VenueType,
@@ -9,6 +10,8 @@ export type {
   Isochrone,
   MatrixEntry,
   RouteMatrix,
+  RouteLeg,
+  RouteGeometry,
   Venue,
   RendezvousOptions,
   RendezvousSuggestion,
