@@ -1,3 +1,10 @@
+## [1.11.5](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.4...v1.11.5) (2026-02-28)
+
+
+### Bug Fixes
+
+* remove isochrone border lines entirely ([d52d281](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/d52d281427c6a0f79329f04928783a7f3e0da5aa))
+
 ## [1.11.4](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.11.3...v1.11.4) (2026-02-28)
 
 
