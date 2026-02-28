@@ -7,7 +7,7 @@ import { ValhallaEngine, ValhallaError, intersectPolygonsAll, searchVenues }
 import qrcode from 'https://esm.sh/qrcode-generator@1.4.4'
 
 const COLOURS = ['#ff44ff', '#00e5ff', '#00ff88', '#ffaa00', '#aa55ff']
-const INTERSECTION_COLOUR = '#ffffff'
+const INTERSECTION_COLOUR = '#4488ff'
 
 let map
 let currentScenario = null
@@ -242,6 +242,18 @@ function applyTheme(theme) {
     const style = theme === 'light' ? LIGHT_STYLE : DARK_STYLE
     const center = map.getCenter()
     const zoom = map.getZoom()
+
+    // Cancel running animations and clear DOM markers before setStyle
+    // (setStyle removes layers/sources but NOT marker DOM elements)
+    animationId++
+    participantMarkers.forEach(pm => pm.marker.remove())
+    participantMarkers = []
+    venueMarkers.forEach(vm => vm.marker.remove())
+    venueMarkers = []
+    selectedParticipant = null
+    clearRouteLayers()
+    resetPipeline()
+
     map.setStyle(style)
     map.once('style.load', () => {
       map.setCenter(center)
@@ -1060,18 +1072,7 @@ function addIntersection(polygons) {
       id: `${id}-fill`,
       type: 'fill',
       source: id,
-      paint: { 'fill-color': INTERSECTION_COLOUR, 'fill-opacity': 0.06 },
-    })
-
-    map.addLayer({
-      id: `${id}-line`,
-      type: 'line',
-      source: id,
-      paint: {
-        'line-color': INTERSECTION_COLOUR,
-        'line-width': 1.5,
-        'line-opacity': 0.3,
-      },
+      paint: { 'fill-color': INTERSECTION_COLOUR, 'fill-opacity': 0.12 },
     })
   }
 }
