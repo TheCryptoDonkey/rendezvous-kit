@@ -313,5 +313,38 @@ describe('ValhallaEngine', () => {
       expect(headers['X-Api-Key']).toBe('route-key')
       expect(headers['Content-Type']).toBe('application/json')
     })
+
+    it('preserves fractional minutes without rounding', async () => {
+      const engine = new ValhallaEngine({ baseUrl: 'http://localhost:8002' })
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          trip: {
+            summary: { time: 425, length: 3.7 },
+            legs: [{
+              shape: '_p~iF~ps|U_ulLnnqC',
+              maneuvers: [{
+                instruction: 'Head north.',
+                length: 3.7,
+                time: 425,
+              }],
+            }],
+          },
+        }),
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const result = await engine.computeRoute(
+        { lat: 51.456, lon: -2.626 },
+        { lat: 51.461, lon: -2.588 },
+        'drive',
+      )
+
+      expect(result.durationMinutes).toBeCloseTo(7.0833, 3)
+      expect(result.legs![0].durationMinutes).toBeCloseTo(7.0833, 3)
+
+      vi.unstubAllGlobals()
+    })
   })
 })

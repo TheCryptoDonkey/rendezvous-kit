@@ -123,7 +123,7 @@ export class OpenRouteServiceEngine implements RoutingEngine {
     return { origins, destinations, entries }
   }
 
-  async computeRoute(): Promise<RouteGeometry> {
+  async computeRoute(_origin: LatLon, _destination: LatLon, _mode: TransportMode): Promise<RouteGeometry> {
     throw new Error('computeRoute is not yet implemented for OpenRouteService')
   }
 }
