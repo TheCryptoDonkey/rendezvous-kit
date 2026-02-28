@@ -58,6 +58,16 @@ function updateCreditDisplay(sats) {
   else el.classList.remove('depleted')
 }
 
+// --- Version badge (fetched from npm, always in sync) ---
+
+fetch('https://registry.npmjs.org/rendezvous-kit/latest')
+  .then(r => r.json())
+  .then(d => {
+    const el = document.getElementById('version-badge')
+    if (el && d.version) el.textContent = `v${d.version}`
+  })
+  .catch(() => {}) // silent — badge stays empty if offline
+
 // --- Helpers ---
 
 function esc(str) {
