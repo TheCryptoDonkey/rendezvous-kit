@@ -52,13 +52,17 @@ export async function searchVenues(
 
   const tagQueries = venueTypes
     .map(vt => VENUE_TAG_MAP[vt] ?? `amenity=${vt}`)
-    .map(tag => {
+    .flatMap(tag => {
       const [key, value] = tag.split('=')
-      return `node["${key}"="${value}"]["name"](${bboxStr});`
+      return [
+        `node["${key}"="${value}"]["name"](${bboxStr});`,
+        `way["${key}"="${value}"]["name"](${bboxStr});`,
+        `relation["${key}"="${value}"]["name"](${bboxStr});`,
+      ]
     })
     .join('\n')
 
-  const query = `[out:json][timeout:25];(\n${tagQueries}\n);out body;`
+  const query = `[out:json][timeout:25];(\n${tagQueries}\n);out center;`
   const body = `data=${encodeURIComponent(query)}`
 
   const endpoints = overpassUrl ? [overpassUrl] : OVERPASS_ENDPOINTS
@@ -78,21 +82,29 @@ export async function searchVenues(
           elements: Array<{
             type: string
             id: number
-            lat: number
-            lon: number
+            lat?: number
+            lon?: number
+            center?: { lat: number; lon: number }
             tags: Record<string, string>
           }>
         }
 
         return data.elements
           .filter(el => el.tags?.name)
-          .map(el => ({
-            name: el.tags.name,
-            lat: el.lat,
-            lon: el.lon,
-            venueType: inferVenueType(el.tags, venueTypes),
-            osmId: `${el.type}/${el.id}`,
-          }))
+          .map(el => {
+            // Nodes have lat/lon directly; ways/relations have center from `out center;`
+            const lat = el.lat ?? el.center?.lat
+            const lon = el.lon ?? el.center?.lon
+            if (lat === undefined || lon === undefined) return null
+            return {
+              name: el.tags.name,
+              lat,
+              lon,
+              venueType: inferVenueType(el.tags, venueTypes),
+              osmId: `${el.type}/${el.id}`,
+            }
+          })
+          .filter((v): v is NonNullable<typeof v> => v !== null)
       }
 
       // 429 or 5xx — try next endpoint
