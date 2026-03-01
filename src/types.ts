@@ -47,7 +47,7 @@ export interface RouteMatrix {
 }
 
 /** Venue type for filtering. */
-export type VenueType = 'park' | 'cafe' | 'restaurant' | 'service_station' | 'library' | 'pub' | 'playground' | 'community_centre' | string
+export type VenueType = 'park' | 'cafe' | 'restaurant' | 'service_station' | 'library' | 'pub' | 'playground' | 'community_centre' | 'bar' | 'fast_food' | 'garden' | 'theatre' | 'arts_centre' | 'fitness_centre' | 'sports_centre' | 'escape_game' | 'swimming_pool' | string
 
 /** A venue found within the rendezvous zone. */
 export interface Venue {
