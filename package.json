@@ -72,5 +72,9 @@
     "type": "git",
     "url": "https://github.com/TheCryptoDonkey/rendezvous-kit.git"
   },
-  "homepage": "https://github.com/TheCryptoDonkey/rendezvous-kit"
+  "homepage": "https://github.com/TheCryptoDonkey/rendezvous-kit",
+  "funding": {
+    "type": "lightning",
+    "url": "https://strike.me/thedonkey"
+  }
 }
