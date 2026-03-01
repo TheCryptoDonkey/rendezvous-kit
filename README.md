@@ -5,6 +5,7 @@
 [![npm](https://img.shields.io/npm/v/rendezvous-kit)](https://www.npmjs.com/package/rendezvous-kit)
 [![licence](https://img.shields.io/npm/l/rendezvous-kit)](https://github.com/TheCryptoDonkey/rendezvous-kit/blob/main/LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-native-blue)
+[![Nostr](https://img.shields.io/badge/Nostr-Zap%20me-purple)](https://primal.net/p/npub1mgvlrnf5hm9yf0n5mf9nqmvarhvxkc6remu5ec3vf8r0txqkuk7su0e7q2)
 
 **[Live Demo →](https://thecryptodonkey.github.io/rendezvous-kit)**
 
