@@ -1,3 +1,10 @@
+## [1.17.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.17.0...v1.17.1) (2026-03-01)
+
+
+### Bug Fixes
+
+* query way and relation elements in Overpass venue search ([b19be81](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/b19be81e9dac3f3afda3bdba4f257479eaf20b2d))
+
 ## [1.16.3](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.16.2...v1.16.3) (2026-02-28)
 
 
