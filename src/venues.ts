@@ -15,6 +15,15 @@ const VENUE_TAG_MAP: Record<string, string> = {
   pub: 'amenity=pub',
   playground: 'leisure=playground',
   community_centre: 'amenity=community_centre',
+  bar: 'amenity=bar',
+  fast_food: 'amenity=fast_food',
+  garden: 'leisure=garden',
+  theatre: 'amenity=theatre',
+  arts_centre: 'amenity=arts_centre',
+  fitness_centre: 'leisure=fitness_centre',
+  sports_centre: 'leisure=sports_centre',
+  escape_game: 'leisure=escape_game',
+  swimming_pool: 'leisure=swimming_pool',
 }
 
 function polygonBBox(polygon: GeoJSONPolygon): { south: number; west: number; north: number; east: number } {

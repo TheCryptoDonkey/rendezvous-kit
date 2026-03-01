@@ -263,6 +263,13 @@ function init() {
     })
   })
 
+  // Venue type chips
+  document.querySelectorAll('.venue-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('active')
+    })
+  })
+
   // Time slider
   const slider = document.getElementById('time-slider')
   const timeValue = document.getElementById('time-value')
@@ -580,12 +587,8 @@ function clearInteractive() {
 // --- Interactive controls helpers ---
 
 function getSelectedVenueTypes() {
-  const checkboxes = document.querySelectorAll('.venue-checkboxes input[type="checkbox"]')
-  const types = []
-  checkboxes.forEach(cb => {
-    if (cb.checked) types.push(cb.value)
-  })
-  return types
+  const chips = document.querySelectorAll('.venue-chip.active')
+  return Array.from(chips).map(chip => chip.dataset.venue)
 }
 
 function resetFindButton() {
