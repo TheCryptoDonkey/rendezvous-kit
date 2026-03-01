@@ -77,10 +77,12 @@ export class ValhallaEngine implements RoutingEngine {
   readonly name = 'Valhalla'
   private readonly baseUrl: string
   private readonly extraHeaders: Record<string, string>
+  private readonly timeoutMs: number
 
-  constructor(config: { baseUrl: string; headers?: Record<string, string> }) {
+  constructor(config: { baseUrl: string; headers?: Record<string, string>; timeoutMs?: number }) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '')
     this.extraHeaders = config.headers ?? {}
+    this.timeoutMs = config.timeoutMs ?? 30_000
   }
 
   async computeIsochrone(
@@ -99,6 +101,7 @@ export class ValhallaEngine implements RoutingEngine {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...this.extraHeaders },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(this.timeoutMs),
     })
 
     if (!res.ok) {
@@ -137,6 +140,7 @@ export class ValhallaEngine implements RoutingEngine {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...this.extraHeaders },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(this.timeoutMs),
     })
 
     if (!res.ok) {
@@ -183,6 +187,7 @@ export class ValhallaEngine implements RoutingEngine {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...this.extraHeaders },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(this.timeoutMs),
     })
 
     if (!res.ok) {
