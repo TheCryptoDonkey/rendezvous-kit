@@ -181,6 +181,8 @@ export class ValhallaEngine implements RoutingEngine {
       ],
       costing: COSTING[mode],
       directions_type: 'maneuvers',
+      language: 'en-US',
+      directions_options: { units: 'km' },
     }
 
     const res = await fetch(`${this.baseUrl}/route`, {
