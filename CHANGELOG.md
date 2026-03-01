@@ -1,3 +1,10 @@
+## [1.17.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.17.1...v1.17.2) (2026-03-01)
+
+
+### Bug Fixes
+
+* add explicit language and units to Valhalla route request ([e676cf4](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/e676cf44125404902599f402b80c3818f3480e49))
+
 ## [1.17.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.17.0...v1.17.1) (2026-03-01)
 
 
