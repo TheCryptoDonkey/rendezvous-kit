@@ -740,20 +740,21 @@ async function runInteractive() {
   })
 
   try {
-    // Step 1: Compute isochrones
-    const isochrones = []
-    for (let i = 0; i < interactiveParticipants.length; i++) {
-      if (animationId !== thisAnimation) return
-      const p = interactiveParticipants[i]
-      const iso = await interactiveEngine.computeIsochrone(
+    // Step 1: Compute isochrones (parallel for speed)
+    let isoCompleted = 0
+    const isoPromises = interactiveParticipants.map((p, i) =>
+      interactiveEngine.computeIsochrone(
         { lat: p.lat, lon: p.lon },
         selectedMode,
         selectedTime
-      )
-      isochrones.push(iso.polygon)
-      addIsochrone(i, iso.polygon)
-      markStep('isochrones', i + 1, interactiveParticipants.length)
-    }
+      ).then(iso => {
+        isoCompleted++
+        addIsochrone(i, iso.polygon)
+        markStep('isochrones', isoCompleted, interactiveParticipants.length)
+        return iso.polygon
+      })
+    )
+    const isochrones = await Promise.all(isoPromises)
 
     if (animationId !== thisAnimation) return
 
