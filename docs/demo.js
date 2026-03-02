@@ -201,6 +201,7 @@ function init() {
     center: [-2.59, 51.45],
     zoom: 12,
   })
+  window._map = map  // Expose for demo recording
 
   map.on('load', () => loadScenario('bristol'))
 
