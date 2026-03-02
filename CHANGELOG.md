@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.17.2...v1.18.0) (2026-03-02)
+
+
+### Features
+
+* expose map instance for demo recording ([77ecd15](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/77ecd155451ec321e9f4f24f142c646acf2d426f))
+
 ## [1.17.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.17.1...v1.17.2) (2026-03-01)
 
 
