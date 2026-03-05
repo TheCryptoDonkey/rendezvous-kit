@@ -1,6 +1,7 @@
-import type { RoutingEngine, RendezvousOptions, RendezvousSuggestion, LatLon, GeoJSONPolygon } from './types.js'
+import type { RoutingEngine, RendezvousOptions, RendezvousSuggestion, LatLon, GeoJSONPolygon, FairnessStrategy, TransportMode, VenueType } from './types.js'
 import { searchVenues } from './venues.js'
 import { intersectPolygonsAll, polygonArea, boundingBox } from './geo.js'
+import { chooseStrategy, computeSearchHull } from './hull.js'
 
 /**
  * Find optimal meeting points for N participants using isochrone intersection.
@@ -17,10 +18,19 @@ export async function findRendezvous(
   engine: RoutingEngine,
   options: RendezvousOptions,
 ): Promise<RendezvousSuggestion[]> {
-  const { participants, mode, maxTimeMinutes, venueTypes, fairness = 'min_max', limit = 5 } = options
+  const { participants, mode, maxTimeMinutes, venueTypes, fairness = 'min_max', limit = 5, strategy: requestedStrategy = 'auto' } = options
 
   if (participants.length < 2) {
     throw new RangeError('findRendezvous requires at least 2 participants')
+  }
+
+  // Resolve pipeline strategy
+  const strategy = requestedStrategy === 'auto'
+    ? chooseStrategy(participants, mode, maxTimeMinutes)
+    : requestedStrategy
+
+  if (strategy === 'hull') {
+    return findRendezvousHull(engine, participants, mode, maxTimeMinutes, venueTypes, fairness, limit)
   }
 
   // Step 1: Compute isochrones for each participant
@@ -76,10 +86,82 @@ export async function findRendezvous(
     if (!reachable) continue
 
     const fairnessScore = computeFairnessScore(times, fairness)
-    suggestions.push({ venue, travelTimes, fairnessScore })
+    suggestions.push({ venue, travelTimes, fairnessScore, metadata: { strategy: 'isochrone' } })
   }
 
   // Step 6: Sort by fairness score and return top N
+  suggestions.sort((a, b) => a.fairnessScore - b.fairnessScore)
+  return suggestions.slice(0, limit)
+}
+
+async function findRendezvousHull(
+  engine: RoutingEngine,
+  participants: LatLon[],
+  mode: TransportMode,
+  maxTimeMinutes: number,
+  venueTypes: VenueType[],
+  fairness: FairnessStrategy,
+  limit: number,
+): Promise<RendezvousSuggestion[]> {
+  // 1. Compute buffered hull
+  const bufferedHull = computeSearchHull(participants, mode, maxTimeMinutes)
+
+  // 2. Search venues in hull
+  const searchPoly: GeoJSONPolygon = {
+    type: 'Polygon',
+    coordinates: [[...bufferedHull, bufferedHull[0]]],
+  }
+  let venues = await searchVenues(searchPoly, venueTypes)
+
+  if (venues.length === 0) {
+    // Fallback: use centroid of hull
+    let cx = 0, cy = 0
+    for (const [lon, lat] of bufferedHull) { cx += lon; cy += lat }
+    cx /= bufferedHull.length
+    cy /= bufferedHull.length
+    venues = [{
+      name: 'Meeting point',
+      lat: cy,
+      lon: cx,
+      venueType: 'other',
+    }]
+  }
+
+  // 3. Route matrix
+  const venuePoints: LatLon[] = venues.map(v => ({ lat: v.lat, lon: v.lon }))
+  const matrix = await engine.computeRouteMatrix(participants, venuePoints, mode)
+
+  // 4. Filter & score
+  const suggestions: RendezvousSuggestion[] = []
+  for (let vi = 0; vi < venues.length; vi++) {
+    const travelTimes: Record<string, number> = {}
+    const times: number[] = []
+    let reachable = true
+
+    for (let pi = 0; pi < participants.length; pi++) {
+      const entry = matrix.entries.find(
+        e => e.originIndex === pi && e.destinationIndex === vi,
+      )
+      const duration = entry?.durationMinutes ?? -1
+      if (duration < 0 || duration > maxTimeMinutes) {
+        reachable = false
+        break
+      }
+      const label = participants[pi].label ?? `participant_${pi}`
+      travelTimes[label] = Math.round(duration * 10) / 10
+      times.push(duration)
+    }
+
+    if (!reachable) continue
+
+    suggestions.push({
+      venue: venues[vi],
+      travelTimes,
+      fairnessScore: computeFairnessScore(times, fairness),
+      metadata: { strategy: 'hull' },
+    })
+  }
+
   suggestions.sort((a, b) => a.fairnessScore - b.fairnessScore)
   return suggestions.slice(0, limit)
 }
