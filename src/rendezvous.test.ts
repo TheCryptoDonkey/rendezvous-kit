@@ -280,3 +280,80 @@ describe('findRendezvous', () => {
     expect(result[0].venue.lon).toBeLessThan(-1.9)
   })
 })
+
+describe('findRendezvous — hull strategy', () => {
+  it('does not call computeIsochrone when strategy is "hull"', async () => {
+    const { searchVenues } = await import('./venues.js')
+    vi.mocked(searchVenues).mockResolvedValueOnce([
+      { name: 'Test Cafe', lat: 51.505, lon: -0.115, venueType: 'cafe' },
+    ])
+
+    const engine = createMockEngine()
+    const results = await findRendezvous(engine, {
+      participants: [
+        { lat: 51.50, lon: -0.12, label: 'A' },
+        { lat: 51.51, lon: -0.11, label: 'B' },
+      ],
+      mode: 'drive',
+      maxTimeMinutes: 30,
+      venueTypes: ['cafe'],
+      strategy: 'hull',
+    })
+
+    expect(engine.computeIsochrone).not.toHaveBeenCalled()
+    expect(engine.computeRouteMatrix).toHaveBeenCalled()
+    expect(results.length).toBeGreaterThan(0)
+    expect(results[0].metadata?.strategy).toBe('hull')
+  })
+
+  it('calls computeIsochrone when strategy is "isochrone"', async () => {
+    const engine = createMockEngine()
+    const results = await findRendezvous(engine, {
+      participants: [
+        { lat: 51.4545, lon: -2.5879, label: 'Bristol' },
+        { lat: 51.3758, lon: -2.3599, label: 'Bath' },
+      ],
+      mode: 'drive',
+      maxTimeMinutes: 30,
+      venueTypes: ['park'],
+      strategy: 'isochrone',
+    })
+
+    expect(engine.computeIsochrone).toHaveBeenCalled()
+    expect(results[0].metadata?.strategy).toBe('isochrone')
+  })
+
+  it('hull path filters venues exceeding maxTimeMinutes', async () => {
+    const { searchVenues } = await import('./venues.js')
+    vi.mocked(searchVenues).mockResolvedValueOnce([
+      { name: 'Near Cafe', lat: 51.505, lon: -0.115, venueType: 'cafe' },
+      { name: 'Far Cafe', lat: 52.0, lon: 0.5, venueType: 'cafe' },
+    ])
+
+    const engine = createMockEngine()
+    vi.mocked(engine.computeRouteMatrix).mockResolvedValueOnce({
+      origins: [],
+      destinations: [],
+      entries: [
+        { originIndex: 0, destinationIndex: 0, durationMinutes: 10, distanceKm: 5 },
+        { originIndex: 1, destinationIndex: 0, durationMinutes: 12, distanceKm: 6 },
+        { originIndex: 0, destinationIndex: 1, durationMinutes: 45, distanceKm: 40 },
+        { originIndex: 1, destinationIndex: 1, durationMinutes: 50, distanceKm: 45 },
+      ],
+    })
+
+    const results = await findRendezvous(engine, {
+      participants: [
+        { lat: 51.50, lon: -0.12, label: 'A' },
+        { lat: 51.51, lon: -0.11, label: 'B' },
+      ],
+      mode: 'drive',
+      maxTimeMinutes: 30,
+      venueTypes: ['cafe'],
+      strategy: 'hull',
+    })
+
+    expect(results).toHaveLength(1)
+    expect(results[0].venue.name).toBe('Near Cafe')
+  })
+})

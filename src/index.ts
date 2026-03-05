@@ -32,6 +32,9 @@ export {
 } from './geo.js'
 export type { BBox, Coordinate } from './geo.js'
 
+// Hull
+export { SPEED_KMH, chooseStrategy, computeSearchHull, bufferHull } from './hull.js'
+
 // Engines
 export { OpenRouteServiceEngine } from './engines/openrouteservice.js'
 export { ValhallaEngine, ValhallaError } from './engines/valhalla.js'
