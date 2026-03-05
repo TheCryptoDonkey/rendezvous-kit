@@ -203,7 +203,7 @@ function init() {
   })
   window._map = map  // Expose for demo recording
 
-  map.on('load', () => loadScenario('bristol'))
+  map.on('load', () => switchMode(true))
 
   // Map click — interactive mode adds markers, showcase mode clears selection
   map.on('click', (e) => {
