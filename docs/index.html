@@ -136,6 +136,10 @@
           </select>
           <span id="interactive-fairness-desc" class="control-hint">Minimise worst-case travel time</span>
         </div>
+        <label class="toggle-label" id="iso-toggle-wrap">
+          <input type="checkbox" id="show-isochrones" checked>
+          <span>Show isochrones</span>
+        </label>
         <div class="action-bar">
           <button id="btn-find" class="btn-find" disabled>Find rendezvous</button>
           <button id="btn-clear" class="btn-clear">Clear all</button>
@@ -147,6 +151,11 @@
       <section class="pipeline">
         <h3>Pipeline</h3>
         <div class="pipeline-steps">
+          <div class="step" id="step-hull">
+            <span class="step-icon">○</span>
+            <span class="step-label">Hull</span>
+            <span class="step-count"></span>
+          </div>
           <div class="step" id="step-isochrones">
             <span class="step-icon">○</span>
             <span class="step-label">Isochrones</span>
