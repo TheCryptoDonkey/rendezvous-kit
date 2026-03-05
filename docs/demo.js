@@ -743,124 +743,240 @@ async function runInteractive() {
     })
   })
 
+  const showIso = document.getElementById('show-isochrones')?.checked ?? true
+  const strategy = hullChooseStrategy(interactiveParticipants, selectedMode, selectedTime)
+
   try {
-    // Step 1: Compute isochrones (parallel for speed)
-    let isoCompleted = 0
-    const isoPromises = interactiveParticipants.map((p, i) =>
-      interactiveEngine.computeIsochrone(
-        { lat: p.lat, lon: p.lon },
-        selectedMode,
-        selectedTime
-      ).then(iso => {
-        isoCompleted++
-        addIsochrone(i, iso.polygon)
-        markStep('isochrones', isoCompleted, interactiveParticipants.length)
-        return iso.polygon
+    if (strategy === 'hull') {
+      // === Hull fast-path ===
+
+      // 1. Draw hull immediately
+      const hull = computeSearchHullDemo(interactiveParticipants, selectedMode, selectedTime)
+      addHullOutline(hull)
+      markStep('hull', 1, 1)
+
+      // 2. Search venues in hull bounding box
+      const hullPoly = { type: 'Polygon', coordinates: [[...hull, hull[0]]] }
+      const rawVenues = await searchVenues(hullPoly, venueTypes, OVERPASS_URL)
+
+      if (rawVenues.length === 0) {
+        showError('No venues found in the search area. Try different venue types or a larger time budget.')
+        resetFindButton()
+        return
+      }
+
+      if (animationId !== thisAnimation) return
+
+      // 3. Route matrix
+      if (rawVenues.length > 50) rawVenues.length = 50
+      const origins = interactiveParticipants.map(p => ({ lat: p.lat, lon: p.lon, label: p.label }))
+      const destinations = rawVenues.map(v => ({ lat: v.lat, lon: v.lon }))
+      const matrix = await interactiveEngine.computeRouteMatrix(origins, destinations, selectedMode)
+
+      if (animationId !== thisAnimation) return
+
+      // 4. Score and filter
+      const scoredVenues = rawVenues.map((v, vi) => {
+        const travelTimes = {}
+        for (let oi = 0; oi < origins.length; oi++) {
+          const entry = matrix.entries.find(e => e.originIndex === oi && e.destinationIndex === vi)
+          const minutes = entry ? Math.round(entry.durationMinutes * 10) / 10 : -1
+          travelTimes[origins[oi].label] = minutes
+        }
+        return { name: v.name, lat: v.lat, lon: v.lon, venueType: v.venueType, travelTimes }
+      }).filter(v => {
+        const times = Object.values(v.travelTimes)
+        return times.every(t => t > 0 && t <= selectedTime)
       })
-    )
-    const isochrones = await Promise.all(isoPromises)
 
-    if (animationId !== thisAnimation) return
-
-    // Step 2: Intersect polygons
-    const rawIntersection = intersectPolygonsAll(isochrones)
-    // Filter out degenerate polygon fragments (slivers from clipping)
-    const allIntersection = rawIntersection.filter(p => polygonArea(p) > 0.0001)
-    if (allIntersection.length === 0) {
-      showError('No common reachable area found. Try increasing the time budget or moving participants closer together.')
-      resetFindButton()
-      return
-    }
-    // Only keep substantial intersection polygons (>= 10% of the largest area).
-    // Thin slivers along road corridors confuse the map and produce misleading venues.
-    const largestArea = Math.max(...allIntersection.map(polygonArea))
-    const intersection = allIntersection.filter(p => polygonArea(p) >= largestArea * 0.1)
-    addIntersection(intersection)
-    markStep('intersection', intersection.length > 1 ? intersection.length : undefined)
-
-    if (animationId !== thisAnimation) return
-
-    // Step 3: Search venues within the bounding box, then filter to those inside the intersection
-    const searchArea = envelopePolygon(intersection)
-    const rawVenues = await searchVenues(searchArea, venueTypes, OVERPASS_URL)
-    const venues = rawVenues.filter(v => pointInAnyPolygon(v.lon, v.lat, intersection))
-
-    if (venues.length === 0) {
-      showError('No venues found in the overlap area. Try different venue types or a larger time budget.')
-      resetFindButton()
-      return
-    }
-    markStep('venues')
-
-    if (animationId !== thisAnimation) return
-
-    // Step 4: Compute route matrix for travel times
-    // Cap venues to avoid exceeding Valhalla's max locations limit (2500).
-    // We only keep the top 5 after scoring, so 50 candidates is more than enough.
-    if (venues.length > 50) venues.length = 50
-    const origins = interactiveParticipants.map(p => ({ lat: p.lat, lon: p.lon, label: p.label }))
-    const destinations = venues.map(v => ({ lat: v.lat, lon: v.lon }))
-    const matrix = await interactiveEngine.computeRouteMatrix(origins, destinations, selectedMode)
-
-    if (animationId !== thisAnimation) return
-
-    // Step 5: Score venues
-    const scoredVenues = venues.map((v, vi) => {
-      const travelTimes = {}
-      for (let oi = 0; oi < origins.length; oi++) {
-        const entry = matrix.entries.find(e => e.originIndex === oi && e.destinationIndex === vi)
-        const minutes = entry ? Math.round(entry.durationMinutes * 10) / 10 : -1
-        travelTimes[origins[oi].label] = minutes
+      if (scoredVenues.length === 0) {
+        showError('All venues are beyond the time budget. Try increasing it.')
+        resetFindButton()
+        return
       }
-      return {
-        name: v.name,
-        lat: v.lat,
-        lon: v.lon,
-        venueType: v.venueType,
-        travelTimes,
+
+      scoredVenues.sort((a, b) => {
+        const timesA = Object.values(a.travelTimes)
+        const timesB = Object.values(b.travelTimes)
+        return Math.max(...timesA) - Math.max(...timesB)
+      })
+      const topVenues = scoredVenues.slice(0, 5)
+
+      // Display results
+      currentScenario = {
+        participants: origins,
+        isochrones: [], // No isochrones computed yet
+        intersection: [],
+        venues: topVenues,
+        mode: selectedMode,
+        maxTimeMinutes: selectedTime,
+        venueTypes,
       }
-    }).filter(v => {
-      // Filter out venues with unreachable or zero travel times
-      const times = Object.values(v.travelTimes)
-      return times.every(t => t > 0)
-    })
+      interactiveResults = currentScenario
 
-    if (scoredVenues.length === 0) {
-      showError('All venues have unreachable routes. Try a larger time budget.')
-      resetFindButton()
-      return
+      addVenueMarkers(topVenues)
+      markStep('venues', topVenues.length)
+      displayResults()
+      markStep('scored')
+      fitToScenario(currentScenario)
+      updateInteractiveCodePanel()
+
+      // 5. Background isochrone reveal (if toggle is on)
+      if (showIso) {
+        const isoPromises = interactiveParticipants.map((p) =>
+          interactiveEngine.computeIsochrone(
+            { lat: p.lat, lon: p.lon },
+            selectedMode,
+            selectedTime,
+          )
+        )
+
+        try {
+          const isochrones = await Promise.all(isoPromises)
+          if (animationId !== thisAnimation) return
+
+          // Stagger reveal
+          for (let i = 0; i < isochrones.length; i++) {
+            await delay(250)
+            if (animationId !== thisAnimation) return
+            addIsochrone(i, isochrones[i].polygon)
+            markStep('isochrones', i + 1, isochrones.length)
+          }
+
+          // Update scenario with isochrones for later use
+          currentScenario.isochrones = isochrones.map(iso => iso.polygon)
+
+          // Fade out hull after last isochrone
+          await delay(300)
+          if (animationId !== thisAnimation) return
+          fadeOutHull()
+        } catch (isoErr) {
+          // Isochrones are display-only — don't fail the whole pipeline
+          console.warn('Background isochrone fetch failed:', isoErr)
+        }
+      }
+
+    } else {
+      // === Existing isochrone pipeline ===
+
+      // Step 1: Compute isochrones (parallel for speed)
+      let isoCompleted = 0
+      const isoPromises = interactiveParticipants.map((p, i) =>
+        interactiveEngine.computeIsochrone(
+          { lat: p.lat, lon: p.lon },
+          selectedMode,
+          selectedTime
+        ).then(iso => {
+          isoCompleted++
+          addIsochrone(i, iso.polygon)
+          markStep('isochrones', isoCompleted, interactiveParticipants.length)
+          return iso.polygon
+        })
+      )
+      const isochrones = await Promise.all(isoPromises)
+
+      if (animationId !== thisAnimation) return
+
+      // Step 2: Intersect polygons
+      const rawIntersection = intersectPolygonsAll(isochrones)
+      // Filter out degenerate polygon fragments (slivers from clipping)
+      const allIntersection = rawIntersection.filter(p => polygonArea(p) > 0.0001)
+      if (allIntersection.length === 0) {
+        showError('No common reachable area found. Try increasing the time budget or moving participants closer together.')
+        resetFindButton()
+        return
+      }
+      // Only keep substantial intersection polygons (>= 10% of the largest area).
+      // Thin slivers along road corridors confuse the map and produce misleading venues.
+      const largestArea = Math.max(...allIntersection.map(polygonArea))
+      const intersection = allIntersection.filter(p => polygonArea(p) >= largestArea * 0.1)
+      addIntersection(intersection)
+      markStep('intersection', intersection.length > 1 ? intersection.length : undefined)
+
+      if (animationId !== thisAnimation) return
+
+      // Step 3: Search venues within the bounding box, then filter to those inside the intersection
+      const searchArea = envelopePolygon(intersection)
+      const rawVenues = await searchVenues(searchArea, venueTypes, OVERPASS_URL)
+      const venues = rawVenues.filter(v => pointInAnyPolygon(v.lon, v.lat, intersection))
+
+      if (venues.length === 0) {
+        showError('No venues found in the overlap area. Try different venue types or a larger time budget.')
+        resetFindButton()
+        return
+      }
+      markStep('venues')
+
+      if (animationId !== thisAnimation) return
+
+      // Step 4: Compute route matrix for travel times
+      // Cap venues to avoid exceeding Valhalla's max locations limit (2500).
+      // We only keep the top 5 after scoring, so 50 candidates is more than enough.
+      if (venues.length > 50) venues.length = 50
+      const origins = interactiveParticipants.map(p => ({ lat: p.lat, lon: p.lon, label: p.label }))
+      const destinations = venues.map(v => ({ lat: v.lat, lon: v.lon }))
+      const matrix = await interactiveEngine.computeRouteMatrix(origins, destinations, selectedMode)
+
+      if (animationId !== thisAnimation) return
+
+      // Step 5: Score venues
+      const scoredVenues = venues.map((v, vi) => {
+        const travelTimes = {}
+        for (let oi = 0; oi < origins.length; oi++) {
+          const entry = matrix.entries.find(e => e.originIndex === oi && e.destinationIndex === vi)
+          const minutes = entry ? Math.round(entry.durationMinutes * 10) / 10 : -1
+          travelTimes[origins[oi].label] = minutes
+        }
+        return {
+          name: v.name,
+          lat: v.lat,
+          lon: v.lon,
+          venueType: v.venueType,
+          travelTimes,
+        }
+      }).filter(v => {
+        // Filter out venues with unreachable or zero travel times
+        const times = Object.values(v.travelTimes)
+        return times.every(t => t > 0)
+      })
+
+      if (scoredVenues.length === 0) {
+        showError('All venues have unreachable routes. Try a larger time budget.')
+        resetFindButton()
+        return
+      }
+
+      // Sort by current fairness strategy and keep top 5
+      scoredVenues.sort((a, b) => {
+        const timesA = Object.values(a.travelTimes)
+        const timesB = Object.values(b.travelTimes)
+        return Math.max(...timesA) - Math.max(...timesB)
+      })
+      const topVenues = scoredVenues.slice(0, 5)
+
+      // Build scenario-compatible object for displayResults
+      currentScenario = {
+        participants: origins,
+        isochrones,
+        intersection,
+        venues: topVenues,
+        mode: selectedMode,
+        maxTimeMinutes: selectedTime,
+        venueTypes,
+      }
+      interactiveResults = currentScenario
+
+      addVenueMarkers(topVenues)
+      markStep('venues', topVenues.length)
+      displayResults()
+      markStep('scored')
+
+      // Fit map
+      fitToScenario(currentScenario)
+
+      // Update code panel
+      updateInteractiveCodePanel()
     }
-
-    // Sort by current fairness strategy and keep top 5
-    scoredVenues.sort((a, b) => {
-      const timesA = Object.values(a.travelTimes)
-      const timesB = Object.values(b.travelTimes)
-      return Math.max(...timesA) - Math.max(...timesB)
-    })
-    const topVenues = scoredVenues.slice(0, 5)
-
-    // Build scenario-compatible object for displayResults
-    currentScenario = {
-      participants: origins,
-      isochrones,
-      intersection,
-      venues: topVenues,
-      mode: selectedMode,
-      maxTimeMinutes: selectedTime,
-      venueTypes,
-    }
-    interactiveResults = currentScenario
-
-    addVenueMarkers(topVenues)
-    markStep('venues', topVenues.length)
-    displayResults()
-    markStep('scored')
-
-    // Fit map
-    fitToScenario(currentScenario)
-
-    // Update code panel
-    updateInteractiveCodePanel()
 
   } catch (err) {
     if (err instanceof ValhallaError && err.status === 402) {
@@ -1027,6 +1143,161 @@ function clearRouteLayers() {
 
   routeLayers = []
   currentRoutes.clear()
+}
+
+// --- Hull visualisation ---
+// TODO: import from rendezvous-kit once published with hull support
+
+const HULL_COLOUR = '#4fc3f7'
+
+// Approximate speeds for hull buffer calculation (km/h)
+const HULL_SPEED_KMH = { drive: 50, cycle: 15, walk: 5, public_transit: 30 }
+const HULL_EARTH_RADIUS_KM = 6371.0088
+
+function hullConvexHull(points) {
+  if (points.length === 0) return []
+  const seen = new Set()
+  const unique = []
+  for (const p of points) {
+    const key = `${p[0]},${p[1]}`
+    if (!seen.has(key)) { seen.add(key); unique.push(p) }
+  }
+  if (unique.length < 3) return unique
+  unique.sort((a, b) => a[0] - b[0] || a[1] - b[1])
+  function cross(o, a, b) {
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+  }
+  const lower = []
+  for (const p of unique) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop()
+    lower.push(p)
+  }
+  const upper = []
+  for (let i = unique.length - 1; i >= 0; i--) {
+    const p = unique[i]
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop()
+    upper.push(p)
+  }
+  lower.pop(); upper.pop()
+  return [...lower, ...upper]
+}
+
+function hullBuffer(hull, distanceKm) {
+  if (hull.length === 0 || distanceKm === 0) return hull.map(p => [...p])
+  let cx = 0, cy = 0
+  for (const [x, y] of hull) { cx += x; cy += y }
+  cx /= hull.length; cy /= hull.length
+  const degToRad = Math.PI / 180
+  return hull.map(([x, y]) => {
+    const dx = x - cx, dy = y - cy
+    const dist = Math.hypot(dx, dy)
+    if (dist === 0) return [x, y]
+    const latRad = cy * degToRad
+    const kmPerDegLon = (Math.PI / 180) * HULL_EARTH_RADIUS_KM * Math.cos(latRad)
+    const kmPerDegLat = (Math.PI / 180) * HULL_EARTH_RADIUS_KM
+    const bearing = Math.atan2(dx * kmPerDegLon, dy * kmPerDegLat)
+    const offsetLon = (distanceKm * Math.sin(bearing)) / kmPerDegLon
+    const offsetLat = (distanceKm * Math.cos(bearing)) / kmPerDegLat
+    return [x + offsetLon, y + offsetLat]
+  })
+}
+
+function computeSearchHullDemo(participants, mode, maxTimeMinutes) {
+  const points = participants.map(p => [p.lon, p.lat])
+  const hull = hullConvexHull(points)
+  const speedKmH = HULL_SPEED_KMH[mode] || 50
+  const bufferKm = speedKmH * (maxTimeMinutes / 60) * 1.2
+  return hullBuffer(hull, bufferKm)
+}
+
+function hullChooseStrategy(participants, mode, maxTimeMinutes) {
+  const points = participants.map(p => [p.lon, p.lat])
+  const hull = hullConvexHull(points)
+  if (hull.length < 3) {
+    // Degenerate: use max pairwise distance vs travel radius
+    let maxDist = 0
+    for (let i = 0; i < participants.length; i++) {
+      for (let j = i + 1; j < participants.length; j++) {
+        const dLat = (participants[j].lat - participants[i].lat) * Math.PI / 180
+        const dLon = (participants[j].lon - participants[i].lon) * Math.PI / 180
+        const a = Math.sin(dLat/2)**2 + Math.cos(participants[i].lat * Math.PI / 180) * Math.cos(participants[j].lat * Math.PI / 180) * Math.sin(dLon/2)**2
+        const d = 2 * HULL_EARTH_RADIUS_KM * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+        if (d > maxDist) maxDist = d
+      }
+    }
+    const radiusKm = (HULL_SPEED_KMH[mode] || 50) * (maxTimeMinutes / 60)
+    return maxDist < radiusKm ? 'hull' : 'isochrone'
+  }
+  // Approximate hull area using shoelace (in degrees², good enough for comparison)
+  let area = 0
+  for (let i = 0; i < hull.length; i++) {
+    const j = (i + 1) % hull.length
+    area += hull[i][0] * hull[j][1] - hull[j][0] * hull[i][1]
+  }
+  area = Math.abs(area) / 2
+  // Convert to approximate km² using latitude-corrected degrees
+  const avgLat = hull.reduce((s, p) => s + p[1], 0) / hull.length
+  const kmPerDegLon = (Math.PI / 180) * HULL_EARTH_RADIUS_KM * Math.cos(avgLat * Math.PI / 180)
+  const kmPerDegLat = (Math.PI / 180) * HULL_EARTH_RADIUS_KM
+  const areaKm2 = area * kmPerDegLon * kmPerDegLat
+  const radiusKm = (HULL_SPEED_KMH[mode] || 50) * (maxTimeMinutes / 60)
+  const maxAreaKm2 = Math.PI * radiusKm * radiusKm
+  return areaKm2 < maxAreaKm2 * 0.5 ? 'hull' : 'isochrone'
+}
+
+function addHullOutline(hull) {
+  const coordinates = [...hull, hull[0]]
+  map.addSource('demo-hull', {
+    type: 'geojson',
+    data: {
+      type: 'Feature',
+      geometry: { type: 'Polygon', coordinates: [coordinates] },
+      properties: {},
+    },
+  })
+  map.addLayer({
+    id: 'demo-hull-fill',
+    type: 'fill',
+    source: 'demo-hull',
+    paint: { 'fill-color': HULL_COLOUR, 'fill-opacity': 0.06 },
+  })
+  map.addLayer({
+    id: 'demo-hull-line',
+    type: 'line',
+    source: 'demo-hull',
+    paint: {
+      'line-color': HULL_COLOUR,
+      'line-width': 2,
+      'line-dasharray': [4, 4],
+      'line-opacity': 0.7,
+    },
+  })
+}
+
+function fadeOutHull() {
+  if (!map.getLayer('demo-hull-fill')) return
+  let opacity = 0.06
+  const interval = setInterval(() => {
+    opacity -= 0.002
+    if (opacity <= 0) {
+      clearInterval(interval)
+      removeHull()
+      return
+    }
+    if (map.getLayer('demo-hull-fill')) {
+      map.setPaintProperty('demo-hull-fill', 'fill-opacity', opacity)
+    }
+    if (map.getLayer('demo-hull-line')) {
+      map.setPaintProperty('demo-hull-line', 'line-opacity', opacity * 10)
+    }
+  }, 20)
+}
+
+function removeHull() {
+  for (const id of ['demo-hull-fill', 'demo-hull-line']) {
+    if (map.getLayer(id)) map.removeLayer(id)
+  }
+  if (map.getSource('demo-hull')) map.removeSource('demo-hull')
 }
 
 function addRouteLayer(participantIndex, route) {
