@@ -769,7 +769,9 @@ async function runInteractive() {
 
       // 2. Search venues in hull bounding box
       const hullPoly = { type: 'Polygon', coordinates: [[...hull, hull[0]]] }
+      console.log('[debug] hull strategy, hull points:', hull.length, 'bbox:', JSON.stringify(hullPoly.coordinates[0].slice(0, 2)))
       const rawVenues = await searchVenues(hullPoly, venueTypes, OVERPASS_URL)
+      console.log('[debug] hull rawVenues:', rawVenues.length)
 
       if (rawVenues.length === 0) {
         showError('No venues found in the search area. Try different venue types or a larger time budget.')
@@ -909,8 +911,13 @@ async function runInteractive() {
 
       // Step 3: Search venues within the bounding box, then filter to those inside the intersection
       const searchArea = envelopePolygon(intersection)
+      console.log('[debug] searchArea bbox:', JSON.stringify(searchArea.coordinates[0].slice(0, 2)))
+      console.log('[debug] intersection polygons:', intersection.length, 'areas:', intersection.map(polygonArea))
       const rawVenues = await searchVenues(searchArea, venueTypes, OVERPASS_URL)
+      console.log('[debug] rawVenues from Overpass:', rawVenues.length)
+      if (rawVenues.length > 0) console.log('[debug] sample venue:', rawVenues[0].name, rawVenues[0].lat, rawVenues[0].lon)
       const venues = rawVenues.filter(v => pointInAnyPolygon(v.lon, v.lat, intersection))
+      console.log('[debug] venues after pointInPolygon filter:', venues.length)
 
       if (venues.length === 0) {
         showError('No venues found in the overlap area. Try different venue types or a larger time budget.')
