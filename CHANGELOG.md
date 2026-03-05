@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.19.1...v1.20.0) (2026-03-05)
+
+
+### Features
+
+* centre map on user's GPS location when available ([3771a04](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/3771a04aa3bd3969f021bf229e68e27c17e3d8f7))
+
 ## [1.19.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.19.0...v1.19.1) (2026-03-05)
 
 
