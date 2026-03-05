@@ -155,6 +155,8 @@ export interface RendezvousOptions {
   venueTypes: VenueType[]
   fairness?: FairnessStrategy
   limit?: number
+  /** Pipeline strategy. 'auto' picks hull or isochrone based on participant spread. */
+  strategy?: 'auto' | 'hull' | 'isochrone'
 }
 
 /** A ranked rendezvous suggestion. */
@@ -162,6 +164,8 @@ export interface RendezvousSuggestion {
   venue: Venue
   travelTimes: Record<string, number>
   fairnessScore: number
+  /** Which pipeline strategy was used. */
+  metadata?: { strategy: 'hull' | 'isochrone' }
 }
 
 /**
