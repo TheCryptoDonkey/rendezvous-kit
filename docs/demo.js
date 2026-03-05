@@ -2,7 +2,7 @@
 // Uses global maplibregl from CDN script tag
 
 import { ValhallaEngine, ValhallaError, intersectPolygonsAll, searchVenues }
-  from 'https://esm.sh/rendezvous-kit@1.19.0'
+  from 'https://esm.sh/rendezvous-kit@1.19.1'
 
 import qrcode from 'https://esm.sh/qrcode-generator@1.4.4'
 
