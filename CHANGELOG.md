@@ -1,3 +1,10 @@
+## [1.20.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.20.0...v1.20.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* guard route layer removal with getLayer/getSource checks ([2e6f9d5](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/2e6f9d52398af4384b2c3fbe33dd1539f1dec4fd))
+
 # [1.20.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.19.1...v1.20.0) (2026-03-05)
 
 
