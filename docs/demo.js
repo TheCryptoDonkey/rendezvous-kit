@@ -1205,9 +1205,28 @@ function hullBuffer(hull, distanceKm) {
 function computeSearchHullDemo(participants, mode, maxTimeMinutes) {
   const points = participants.map(p => [p.lon, p.lat])
   const hull = hullConvexHull(points)
-  const speedKmH = HULL_SPEED_KMH[mode] || 50
-  const bufferKm = speedKmH * (maxTimeMinutes / 60) * 1.2
+  // Buffer should be a small margin, not the full travel radius
+  const hullDiameter = hullMaxPairwiseDist(hull.length >= 2 ? hull : points)
+  const travelRadius = (HULL_SPEED_KMH[mode] || 50) * (maxTimeMinutes / 60)
+  const bufferKm = Math.min(hullDiameter * 0.3, travelRadius * 0.3)
   return hullBuffer(hull, bufferKm)
+}
+
+function hullMaxPairwiseDist(points) {
+  let maxDist = 0
+  const degToRad = Math.PI / 180
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      const dLon = (points[j][0] - points[i][0]) * degToRad
+      const dLat = (points[j][1] - points[i][1]) * degToRad
+      const lat1 = points[i][1] * degToRad
+      const lat2 = points[j][1] * degToRad
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
+      const d = 2 * HULL_EARTH_RADIUS_KM * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+      if (d > maxDist) maxDist = d
+    }
+  }
+  return maxDist
 }
 
 function hullChooseStrategy(participants, mode, maxTimeMinutes) {

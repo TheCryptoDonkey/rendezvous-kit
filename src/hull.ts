@@ -112,7 +112,11 @@ export function computeSearchHull(
 ): [number, number][] {
   const points: [number, number][] = participants.map(p => [p.lon, p.lat])
   const hull = convexHull(points)
-  const speedKmH = SPEED_KMH[mode]
-  const bufferKm = speedKmH * (maxTimeMinutes / 60) * 1.2
+
+  // Buffer should be a small margin beyond the hull, not the full travel radius.
+  // The meeting point is inside the hull; the buffer catches nearby venues just outside.
+  const hullDiameterKm = maxPairwiseDistanceKm(hull.length >= 2 ? hull : points)
+  const travelRadiusKm = SPEED_KMH[mode] * (maxTimeMinutes / 60)
+  const bufferKm = Math.min(hullDiameterKm * 0.3, travelRadiusKm * 0.3)
   return bufferHull(hull, bufferKm)
 }
