@@ -790,7 +790,8 @@ async function runInteractive() {
       if (animationId !== thisAnimation) return
 
       // 4. Score and filter
-      const scoredVenues = rawVenues.map((v, vi) => {
+      console.log('[debug] matrix entries:', matrix.entries.length, 'origins:', origins.length, 'destinations:', destinations.length)
+      const allScored = rawVenues.map((v, vi) => {
         const travelTimes = {}
         for (let oi = 0; oi < origins.length; oi++) {
           const entry = matrix.entries.find(e => e.originIndex === oi && e.destinationIndex === vi)
@@ -798,10 +799,13 @@ async function runInteractive() {
           travelTimes[origins[oi].label] = minutes
         }
         return { name: v.name, lat: v.lat, lon: v.lon, venueType: v.venueType, travelTimes }
-      }).filter(v => {
+      })
+      console.log('[debug] top 5 scored venues:', allScored.slice(0, 5).map(v => ({ name: v.name, times: v.travelTimes })))
+      const scoredVenues = allScored.filter(v => {
         const times = Object.values(v.travelTimes)
         return times.every(t => t > 0 && t <= selectedTime)
       })
+      console.log('[debug] venues within time budget:', scoredVenues.length, '/', allScored.length)
 
       if (scoredVenues.length === 0) {
         showError('All venues are beyond the time budget. Try increasing it.')
