@@ -24,6 +24,7 @@ let interactiveEngine = null      // ValhallaEngine instance
 let interactiveResults = null     // results from last interactive run
 let selectedMode = 'drive'
 let selectedTime = 15
+let selectedStrategy = 'auto' // 'auto' | 'hull' | 'isochrone'
 let routeLayers = []              // track route layers for cleanup: { layerId, handlers: { click, mouseenter, mouseleave } }
 let routePopup = null             // active route popup
 let currentRoutes = new Map()     // participantIndex → RouteGeometry (for directions display)
@@ -261,6 +262,15 @@ function init() {
       document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'))
       btn.classList.add('active')
       selectedMode = btn.dataset.mode
+    })
+  })
+
+  // Strategy buttons
+  document.querySelectorAll('.strategy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.strategy-btn').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      selectedStrategy = btn.dataset.strategy
     })
   })
 
@@ -744,7 +754,9 @@ async function runInteractive() {
   })
 
   const showIso = document.getElementById('show-isochrones')?.checked ?? true
-  const strategy = hullChooseStrategy(interactiveParticipants, selectedMode, selectedTime)
+  const strategy = selectedStrategy === 'auto'
+    ? hullChooseStrategy(interactiveParticipants, selectedMode, selectedTime)
+    : selectedStrategy
 
   try {
     if (strategy === 'hull') {

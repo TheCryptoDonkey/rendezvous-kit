@@ -747,7 +747,7 @@ footer {
   gap: 4px;
 }
 
-.mode-btn {
+.mode-btn, .strategy-btn {
   flex: 1;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -761,9 +761,9 @@ footer {
   text-align: center;
 }
 
-.mode-btn:hover { border-color: var(--text-muted); }
+.mode-btn:hover, .strategy-btn:hover { border-color: var(--text-muted); }
 
-.mode-btn.active {
+.mode-btn.active, .strategy-btn.active {
   background: var(--accent);
   color: var(--bg);
   border-color: var(--accent);
