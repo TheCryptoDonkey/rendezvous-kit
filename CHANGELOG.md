@@ -1,3 +1,20 @@
+# [1.19.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.18.0...v1.19.0) (2026-03-05)
+
+
+### Bug Fixes
+
+* reduce hull buffer size and cap Overpass results ([fcab096](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/fcab0963a6178f332ec67ea6e3804188ef38b6eb))
+* update demo imports to v1.18.0 and bump cache busters ([c64d2ff](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/c64d2ffb145d54ee879f8cd0ca3b9453fa2aab6b))
+
+
+### Features
+
+* add hull buffer, auto-decision logic, and speed constants ([f124dcf](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/f124dcf9d92e6cd1eb394606f6244a2f316f8802))
+* add hull fast-path pipeline to findRendezvous ([ea3f94b](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/ea3f94b9f32bfec6a48b39cc32804e4ce6e798c9))
+* add strategy option to RendezvousOptions ([e211c0b](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/e211c0b8d7b1e7a03e000eff83e992f981602df8))
+* make Interactive the default tab in demo page ([b126c9e](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/b126c9e0f4ddd8866a586cd821903f3b80fec7e0))
+* progressive isochrone reveal with hull visualisation ([3a0cf3c](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/3a0cf3c404be4799efd2431ae7c71e815a367412))
+
 # [1.18.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.17.2...v1.18.0) (2026-03-02)
 
 
