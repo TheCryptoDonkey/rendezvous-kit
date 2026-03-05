@@ -204,7 +204,21 @@ function init() {
   })
   window._map = map  // Expose for demo recording
 
-  map.on('load', () => switchMode(true))
+  map.on('load', () => {
+    switchMode(true)
+    // Centre on user's location if available
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (!interactiveResults && interactiveParticipants.length === 0) {
+            map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 13, duration: 1200 })
+          }
+        },
+        () => {}, // silently ignore denial
+        { timeout: 5000 }
+      )
+    }
+  })
 
   // Map click — interactive mode adds markers, showcase mode clears selection
   map.on('click', (e) => {
