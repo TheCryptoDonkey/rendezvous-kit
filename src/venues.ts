@@ -62,7 +62,7 @@ export async function searchVenues(
     })
     .join('\n')
 
-  const query = `[out:json][timeout:25];(\n${tagQueries}\n);out center;`
+  const query = `[out:json][timeout:25];(\n${tagQueries}\n);out center 200;`
   const body = `data=${encodeURIComponent(query)}`
 
   const endpoints = overpassUrl ? [overpassUrl] : OVERPASS_ENDPOINTS
