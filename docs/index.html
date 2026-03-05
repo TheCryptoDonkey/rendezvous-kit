@@ -14,8 +14,8 @@
       <p class="tagline">Fair meeting points for everyone</p>
     </div>
     <nav class="tabs">
-      <button class="tab active" data-tab="showcase">Showcase</button>
-      <button class="tab" data-tab="interactive">Interactive</button>
+      <button class="tab" data-tab="showcase">Showcase</button>
+      <button class="tab active" data-tab="interactive">Interactive</button>
     </nav>
     <div class="header-right">
       <span id="credit-balance" class="credit-badge hidden" title="Remaining routing credits (sats)"></span>
@@ -29,7 +29,7 @@
   <main>
     <div id="map"></div>
     <aside id="panel">
-      <section id="showcase-panel" class="controls">
+      <section id="showcase-panel" class="controls hidden">
         <div class="control-group">
           <label for="scenario-picker">Scenario</label>
           <select id="scenario-picker">
@@ -58,7 +58,7 @@
         </div>
       </section>
 
-      <section id="interactive-panel" class="controls hidden">
+      <section id="interactive-panel" class="controls">
         <div class="control-group">
           <span class="control-group-label">Participants</span>
           <div id="participant-list">
