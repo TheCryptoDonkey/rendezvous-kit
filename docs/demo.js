@@ -1159,13 +1159,13 @@ function clearRouteLayers() {
     map.off('click', layerId, handlers.click)
     map.off('mouseenter', layerId, handlers.mouseenter)
     map.off('mouseleave', layerId, handlers.mouseleave)
-    try { map.removeLayer(layerId) } catch (_) { /* already removed */ }
+    if (map.getLayer(layerId)) map.removeLayer(layerId)
   }
 
   // Remove corresponding sources
   for (const { layerId } of routeLayers) {
     const sourceId = layerId.replace(/-line$/, '')
-    try { map.removeSource(sourceId) } catch (_) { /* already removed */ }
+    if (map.getSource(sourceId)) map.removeSource(sourceId)
   }
 
   routeLayers = []
