@@ -1,3 +1,10 @@
+## [1.20.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.20.1...v1.20.2) (2026-03-06)
+
+
+### Bug Fixes
+
+* harden security and production readiness ([c4af3f2](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/c4af3f2a4c2087e45a2605741d9a52267c690731))
+
 ## [1.20.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.20.0...v1.20.1) (2026-03-05)
 
 
