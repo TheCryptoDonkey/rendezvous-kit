@@ -42,7 +42,7 @@ describe('OsrmEngine', () => {
       )
 
       const [url, init] = mockFetch.mock.calls[0]
-      expect(init).toBeUndefined()
+      expect((init as RequestInit)?.signal).toBeDefined()
       const parsed = new URL(url as string)
       expect(parsed.pathname).toBe('/table/v1/car/-2,51;-2.1,51.1;-2.2,51.2')
       expect(parsed.searchParams.get('sources')).toBe('0')

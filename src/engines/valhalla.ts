@@ -2,6 +2,7 @@ import type {
   RoutingEngine, Isochrone, RouteMatrix, RouteGeometry, MatrixEntry,
   TransportMode, LatLon, GeoJSONPolygon, RouteLeg,
 } from '../types.js'
+import { validateHttpUrl, safeJson, truncateBody } from '../validate.js'
 
 /**
  * Error thrown by ValhallaEngine when the server returns a non-200 response.
@@ -80,7 +81,7 @@ export class ValhallaEngine implements RoutingEngine {
   private readonly timeoutMs: number
 
   constructor(config: { baseUrl: string; headers?: Record<string, string>; timeoutMs?: number }) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, '')
+    this.baseUrl = validateHttpUrl(config.baseUrl, 'ValhallaEngine baseUrl')
     this.extraHeaders = config.headers ?? {}
     this.timeoutMs = config.timeoutMs ?? 30_000
   }
@@ -106,12 +107,12 @@ export class ValhallaEngine implements RoutingEngine {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new ValhallaError(`Valhalla isochrone error: ${res.status} ${res.statusText} — ${text}`, res.status, text)
+      throw new ValhallaError(`Valhalla isochrone error: ${res.status} ${res.statusText} — ${truncateBody(text)}`, res.status, text)
     }
 
-    const data = (await res.json()) as {
+    const data = await safeJson<{
       features: Array<{ geometry: GeoJSONPolygon }>
-    }
+    }>(res, 'Valhalla isochrone')
 
     if (!data.features?.length) {
       throw new Error('Valhalla returned no isochrone features')
@@ -145,12 +146,12 @@ export class ValhallaEngine implements RoutingEngine {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new ValhallaError(`Valhalla matrix error: ${res.status} ${res.statusText} — ${text}`, res.status, text)
+      throw new ValhallaError(`Valhalla matrix error: ${res.status} ${res.statusText} — ${truncateBody(text)}`, res.status, text)
     }
 
-    const data = (await res.json()) as {
+    const data = await safeJson<{
       sources_to_targets: Array<Array<{ time: number; distance: number }>>
-    }
+    }>(res, 'Valhalla matrix')
 
     const entries: MatrixEntry[] = []
     for (let oi = 0; oi < origins.length; oi++) {
@@ -194,10 +195,10 @@ export class ValhallaEngine implements RoutingEngine {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new ValhallaError(`Valhalla route error: ${res.status} ${res.statusText} — ${text}`, res.status, text)
+      throw new ValhallaError(`Valhalla route error: ${res.status} ${res.statusText} — ${truncateBody(text)}`, res.status, text)
     }
 
-    const data = (await res.json()) as {
+    const data = await safeJson<{
       trip: {
         summary: { time: number; length: number }
         legs: Array<{
@@ -222,7 +223,7 @@ export class ValhallaEngine implements RoutingEngine {
           }>
         }>
       }
-    }
+    }>(res, 'Valhalla route')
 
     const tripLeg = data.trip.legs[0]
     const coordinates = decodePolyline6(tripLeg.shape)

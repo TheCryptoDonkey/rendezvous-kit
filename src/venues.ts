@@ -1,9 +1,13 @@
 import type { GeoJSONPolygon, Venue, VenueType } from './types.js'
+import { safeJson, truncateBody } from './validate.js'
 
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
 ]
+
+/** Pattern for safe Overpass tag values (alphanumeric + underscore). */
+const SAFE_TAG_VALUE = /^[a-zA-Z][a-zA-Z0-9_]*$/
 
 /** Map VenueType to Overpass tag queries. */
 const VENUE_TAG_MAP: Record<string, string> = {
@@ -46,12 +50,19 @@ export async function searchVenues(
   polygon: GeoJSONPolygon,
   venueTypes: VenueType[],
   overpassUrl?: string,
+  resultLimit = 200,
 ): Promise<Venue[]> {
   const bbox = polygonBBox(polygon)
   const bboxStr = `${bbox.south},${bbox.west},${bbox.north},${bbox.east}`
 
   const tagQueries = venueTypes
-    .map(vt => VENUE_TAG_MAP[vt] ?? `amenity=${vt}`)
+    .map(vt => {
+      if (VENUE_TAG_MAP[vt]) return VENUE_TAG_MAP[vt]
+      if (!SAFE_TAG_VALUE.test(vt)) {
+        throw new TypeError(`Invalid venue type: "${vt}" — must be a known type or match ${SAFE_TAG_VALUE}`)
+      }
+      return `amenity=${vt}`
+    })
     .flatMap(tag => {
       const [key, value] = tag.split('=')
       return [
@@ -62,7 +73,7 @@ export async function searchVenues(
     })
     .join('\n')
 
-  const query = '[out:json][timeout:25];(\n' + tagQueries + '\n);out center 200;'
+  const query = `[out:json][timeout:25];(\n${tagQueries}\n);out center ${resultLimit};`
   const body = `data=${encodeURIComponent(query)}`
 
   const endpoints = overpassUrl ? [overpassUrl] : OVERPASS_ENDPOINTS
@@ -78,7 +89,7 @@ export async function searchVenues(
       })
 
       if (response.ok) {
-        const data = await response.json() as {
+        const data = await safeJson<{
           elements: Array<{
             type: string
             id: number
@@ -87,7 +98,7 @@ export async function searchVenues(
             center?: { lat: number; lon: number }
             tags: Record<string, string>
           }>
-        }
+        }>(response, 'Overpass API')
 
         return data.elements
           .filter(el => el.tags?.name)

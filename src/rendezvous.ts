@@ -1,4 +1,4 @@
-import type { RoutingEngine, RendezvousOptions, RendezvousSuggestion, LatLon, GeoJSONPolygon, FairnessStrategy, TransportMode, VenueType } from './types.js'
+import type { RoutingEngine, RendezvousOptions, RendezvousSuggestion, LatLon, GeoJSONPolygon, FairnessStrategy, TransportMode, VenueType, Venue, RouteMatrix, MatrixEntry } from './types.js'
 import { searchVenues } from './venues.js'
 import { intersectPolygonsAll, polygonArea, boundingBox } from './geo.js'
 import { chooseStrategy, computeSearchHull } from './hull.js'
@@ -61,37 +61,8 @@ export async function findRendezvous(
   const venuePoints: LatLon[] = venues.map(v => ({ lat: v.lat, lon: v.lon }))
   const matrix = await engine.computeRouteMatrix(participants, venuePoints, mode)
 
-  // Step 5: Score venues (skip any with unreachable participants)
-  const suggestions: RendezvousSuggestion[] = []
-  for (let vi = 0; vi < venues.length; vi++) {
-    const venue = venues[vi]
-    const travelTimes: Record<string, number> = {}
-    const times: number[] = []
-    let reachable = true
-
-    for (let pi = 0; pi < participants.length; pi++) {
-      const entry = matrix.entries.find(
-        e => e.originIndex === pi && e.destinationIndex === vi
-      )
-      const duration = entry?.durationMinutes ?? -1
-      if (duration < 0 || duration > maxTimeMinutes) {
-        reachable = false
-        break
-      }
-      const label = participants[pi].label ?? `participant_${pi}`
-      travelTimes[label] = Math.round(duration * 10) / 10
-      times.push(duration)
-    }
-
-    if (!reachable) continue
-
-    const fairnessScore = computeFairnessScore(times, fairness)
-    suggestions.push({ venue, travelTimes, fairnessScore, metadata: { strategy: 'isochrone' } })
-  }
-
-  // Step 6: Sort by fairness score and return top N
-  suggestions.sort((a, b) => a.fairnessScore - b.fairnessScore)
-  return suggestions.slice(0, limit)
+  // Step 5–6: Score, sort, and return
+  return scoreVenues(venues, participants, matrix, maxTimeMinutes, fairness, 'isochrone', limit)
 }
 
 async function findRendezvousHull(
@@ -131,17 +102,32 @@ async function findRendezvousHull(
   const venuePoints: LatLon[] = venues.map(v => ({ lat: v.lat, lon: v.lon }))
   const matrix = await engine.computeRouteMatrix(participants, venuePoints, mode)
 
-  // 4. Filter & score
+  // 4. Score, sort, and return
+  return scoreVenues(venues, participants, matrix, maxTimeMinutes, fairness, 'hull', limit)
+}
+
+function scoreVenues(
+  venues: Venue[],
+  participants: LatLon[],
+  matrix: RouteMatrix,
+  maxTimeMinutes: number,
+  fairness: FairnessStrategy,
+  strategy: 'hull' | 'isochrone',
+  limit: number,
+): RendezvousSuggestion[] {
+  // Pre-index matrix for O(1) lookup instead of O(n) scan per venue×participant
+  const indexed = new Map<string, MatrixEntry>()
+  for (const e of matrix.entries) indexed.set(`${e.originIndex}:${e.destinationIndex}`, e)
+
   const suggestions: RendezvousSuggestion[] = []
+
   for (let vi = 0; vi < venues.length; vi++) {
     const travelTimes: Record<string, number> = {}
     const times: number[] = []
     let reachable = true
 
     for (let pi = 0; pi < participants.length; pi++) {
-      const entry = matrix.entries.find(
-        e => e.originIndex === pi && e.destinationIndex === vi,
-      )
+      const entry = indexed.get(`${pi}:${vi}`)
       const duration = entry?.durationMinutes ?? -1
       if (duration < 0 || duration > maxTimeMinutes) {
         reachable = false
@@ -158,7 +144,7 @@ async function findRendezvousHull(
       venue: venues[vi],
       travelTimes,
       fairnessScore: computeFairnessScore(times, fairness),
-      metadata: { strategy: 'hull' },
+      metadata: { strategy },
     })
   }
 
@@ -183,6 +169,8 @@ function envelopePolygon(polygons: GeoJSONPolygon[]): GeoJSONPolygon {
 }
 
 function weightedCentroid(polygons: GeoJSONPolygon[]): { lat: number; lon: number } {
+  if (polygons.length === 0) return { lat: 0, lon: 0 }
+
   let totalArea = 0
   let sumLon = 0
   let sumLat = 0
@@ -190,6 +178,7 @@ function weightedCentroid(polygons: GeoJSONPolygon[]): { lat: number; lon: numbe
     const area = polygonArea(p)
     const ring = p.coordinates[0]
     const n = ring.length - 1
+    if (n <= 0) continue
     let cLon = 0, cLat = 0
     for (let i = 0; i < n; i++) {
       cLon += ring[i][0]
@@ -202,19 +191,23 @@ function weightedCentroid(polygons: GeoJSONPolygon[]): { lat: number; lon: numbe
   if (totalArea === 0) {
     // Fallback: unweighted average of centroids
     let lon = 0, lat = 0
+    let count = 0
     for (const p of polygons) {
       const ring = p.coordinates[0]
       const n = ring.length - 1
+      if (n <= 0) continue
       let cLon = 0, cLat = 0
       for (let i = 0; i < n; i++) { cLon += ring[i][0]; cLat += ring[i][1] }
       lon += cLon / n; lat += cLat / n
+      count++
     }
-    return { lon: lon / polygons.length, lat: lat / polygons.length }
+    if (count === 0) return { lat: 0, lon: 0 }
+    return { lon: lon / count, lat: lat / count }
   }
   return { lon: sumLon / totalArea, lat: sumLat / totalArea }
 }
 
-function computeFairnessScore(times: number[], strategy: string): number {
+function computeFairnessScore(times: number[], strategy: FairnessStrategy): number {
   switch (strategy) {
     case 'min_max':
       return Math.max(...times)

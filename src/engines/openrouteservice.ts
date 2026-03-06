@@ -1,4 +1,5 @@
 import type { RoutingEngine, Isochrone, RouteMatrix, RouteGeometry, LatLon, TransportMode } from '../types.js'
+import { validateHttpUrl, safeJson, truncateBody } from '../validate.js'
 
 const ORS_BASE = 'https://api.openrouteservice.org'
 
@@ -15,6 +16,8 @@ export interface OpenRouteServiceOptions {
   apiKey: string
   /** Base URL override. Defaults to the public ORS API (`https://api.openrouteservice.org`). */
   baseUrl?: string
+  /** Request timeout in milliseconds (default 30 000). */
+  timeoutMs?: number
 }
 
 /**
@@ -33,10 +36,14 @@ export class OpenRouteServiceEngine implements RoutingEngine {
   readonly name = 'OpenRouteService'
   private readonly apiKey: string
   private readonly baseUrl: string
+  private readonly timeoutMs: number
 
   constructor(options: OpenRouteServiceOptions) {
     this.apiKey = options.apiKey
-    this.baseUrl = options.baseUrl ?? ORS_BASE
+    this.baseUrl = options.baseUrl
+      ? validateHttpUrl(options.baseUrl, 'OpenRouteServiceEngine baseUrl')
+      : ORS_BASE
+    this.timeoutMs = options.timeoutMs ?? 30_000
   }
 
   async computeIsochrone(origin: LatLon, mode: TransportMode, timeMinutes: number): Promise<Isochrone> {
@@ -54,16 +61,17 @@ export class OpenRouteServiceEngine implements RoutingEngine {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(this.timeoutMs),
     })
 
     if (!response.ok) {
-      const text = await response.text()
-      throw new Error(`ORS isochrone API error ${response.status}: ${text}`)
+      const text = await response.text().catch(() => '')
+      throw new Error(`ORS isochrone API error ${response.status}: ${truncateBody(text)}`)
     }
 
-    const data = await response.json() as {
+    const data = await safeJson<{
       features: Array<{ geometry: { type: 'Polygon'; coordinates: number[][][] } }>
-    }
+    }>(response, 'ORS isochrone')
 
     if (!data.features?.length) {
       throw new Error('ORS returned no isochrone features')
@@ -94,17 +102,18 @@ export class OpenRouteServiceEngine implements RoutingEngine {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(this.timeoutMs),
     })
 
     if (!response.ok) {
-      const text = await response.text()
-      throw new Error(`ORS matrix API error ${response.status}: ${text}`)
+      const text = await response.text().catch(() => '')
+      throw new Error(`ORS matrix API error ${response.status}: ${truncateBody(text)}`)
     }
 
-    const data = await response.json() as {
+    const data = await safeJson<{
       durations: (number | null)[][]
       distances: (number | null)[][]
-    }
+    }>(response, 'ORS matrix')
 
     const entries = []
     for (let oi = 0; oi < origins.length; oi++) {

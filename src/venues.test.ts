@@ -46,4 +46,66 @@ describe('searchVenues', () => {
     const venues = await searchVenues(polygon, ['cafe'])
     expect(venues).toHaveLength(0)
   })
+
+  it('rejects venue types with injection characters', async () => {
+    const polygon: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-2.7, 51.3], [-2.3, 51.3], [-2.3, 51.5], [-2.7, 51.5], [-2.7, 51.3]]]
+    }
+
+    await expect(() => searchVenues(polygon, ['cafe"]["name"](50,-1,52,1);node["amenity"="']))
+      .rejects.toThrow('Invalid venue type')
+  })
+
+  it('accepts valid custom venue types', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ elements: [] })
+    })
+
+    const polygon: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-2.7, 51.3], [-2.3, 51.3], [-2.3, 51.5], [-2.7, 51.5], [-2.7, 51.3]]]
+    }
+
+    const venues = await searchVenues(polygon, ['cinema'])
+    expect(venues).toHaveLength(0)
+  })
+
+  it('fails over to second endpoint on error', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ elements: [] }),
+      })
+
+    const polygon: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-2.7, 51.3], [-2.3, 51.3], [-2.3, 51.5], [-2.7, 51.5], [-2.7, 51.3]]]
+    }
+
+    const venues = await searchVenues(polygon, ['cafe'])
+    expect(venues).toHaveLength(0)
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('uses configurable result limit', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ elements: [] })
+    })
+
+    const polygon: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-2.7, 51.3], [-2.3, 51.3], [-2.3, 51.5], [-2.7, 51.5], [-2.7, 51.3]]]
+    }
+
+    await searchVenues(polygon, ['cafe'], undefined, 50)
+
+    const [, init] = mockFetch.mock.calls[0]
+    const body = (init as RequestInit).body as string
+    const query = decodeURIComponent(body.replace('data=', ''))
+    expect(query).toContain('out center 50;')
+  })
 })
