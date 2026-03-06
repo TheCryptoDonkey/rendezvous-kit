@@ -2,6 +2,7 @@ import type {
   RoutingEngine, Isochrone, RouteMatrix, RouteGeometry, MatrixEntry,
   TransportMode, LatLon, GeoJSONPolygon,
 } from '../types.js'
+import { validateHttpUrl, safeJson, truncateBody } from '../validate.js'
 
 const PROFILE: Record<TransportMode, string> = {
   drive: 'car',
@@ -17,6 +18,9 @@ const PROFILE: Record<TransportMode, string> = {
  * API key is optional for self-hosted deployments.
  * Note: GraphHopper does not natively support `public_transit` — falls back to driving.
  *
+ * Note: When using the cloud API, the API key is sent as a query parameter (`key=...`)
+ * as required by the GraphHopper API. Be aware this may appear in server access logs.
+ *
  * @example
  * ```typescript
  * const engine = new GraphHopperEngine({ baseUrl: 'http://localhost:8989' })
@@ -26,10 +30,12 @@ export class GraphHopperEngine implements RoutingEngine {
   readonly name = 'GraphHopper'
   private readonly baseUrl: string
   private readonly apiKey?: string
+  private readonly timeoutMs: number
 
-  constructor(config: { baseUrl: string; apiKey?: string }) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, '')
+  constructor(config: { baseUrl: string; apiKey?: string; timeoutMs?: number }) {
+    this.baseUrl = validateHttpUrl(config.baseUrl, 'GraphHopperEngine baseUrl')
     this.apiKey = config.apiKey
+    this.timeoutMs = config.timeoutMs ?? 30_000
   }
 
   private params(extra: Record<string, string>): string {
@@ -49,13 +55,15 @@ export class GraphHopperEngine implements RoutingEngine {
       profile: PROFILE[mode],
     })
 
-    const res = await fetch(`${this.baseUrl}/isochrone?${qs}`)
+    const res = await fetch(`${this.baseUrl}/isochrone?${qs}`, {
+      signal: AbortSignal.timeout(this.timeoutMs),
+    })
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new Error(`GraphHopper isochrone error: ${res.status} — ${text}`)
+      throw new Error(`GraphHopper isochrone error: ${res.status} — ${truncateBody(text)}`)
     }
 
-    const data = (await res.json()) as { polygons: Array<{ geometry: GeoJSONPolygon }> }
+    const data = await safeJson<{ polygons: Array<{ geometry: GeoJSONPolygon }> }>(res, 'GraphHopper isochrone')
     if (!data.polygons?.length) throw new Error('GraphHopper returned no polygons')
 
     return { origin, mode, timeMinutes, polygon: data.polygons[0].geometry }
@@ -80,14 +88,15 @@ export class GraphHopperEngine implements RoutingEngine {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(this.timeoutMs),
     })
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new Error(`GraphHopper matrix error: ${res.status} — ${text}`)
+      throw new Error(`GraphHopper matrix error: ${res.status} — ${truncateBody(text)}`)
     }
 
     // GraphHopper returns times in seconds, distances in metres
-    const data = (await res.json()) as { times: number[][]; distances: number[][] }
+    const data = await safeJson<{ times: number[][]; distances: number[][] }>(res, 'GraphHopper matrix')
     const entries: MatrixEntry[] = []
 
     for (let oi = 0; oi < origins.length; oi++) {

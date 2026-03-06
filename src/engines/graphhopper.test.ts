@@ -34,7 +34,7 @@ describe('GraphHopperEngine', () => {
       expect(result.timeMinutes).toBe(30)
 
       const [url, init] = mockFetch.mock.calls[0]
-      expect(init).toBeUndefined()
+      expect((init as RequestInit)?.signal).toBeDefined()
       const parsed = new URL(url as string)
       expect(parsed.pathname).toBe('/isochrone')
       expect(parsed.searchParams.get('point')).toBe('51.4545,-2.5879')

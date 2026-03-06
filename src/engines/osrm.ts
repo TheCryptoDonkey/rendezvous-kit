@@ -2,6 +2,7 @@ import type {
   RoutingEngine, Isochrone, RouteMatrix, RouteGeometry, MatrixEntry,
   TransportMode, LatLon,
 } from '../types.js'
+import { validateHttpUrl, safeJson, truncateBody } from '../validate.js'
 
 const PROFILE: Record<TransportMode, string> = {
   drive: 'car',
@@ -27,9 +28,11 @@ const PROFILE: Record<TransportMode, string> = {
 export class OsrmEngine implements RoutingEngine {
   readonly name = 'OSRM'
   private readonly baseUrl: string
+  private readonly timeoutMs: number
 
-  constructor(config: { baseUrl: string }) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, '')
+  constructor(config: { baseUrl: string; timeoutMs?: number }) {
+    this.baseUrl = validateHttpUrl(config.baseUrl, 'OsrmEngine baseUrl')
+    this.timeoutMs = config.timeoutMs ?? 30_000
   }
 
   computeIsochrone(_origin: LatLon, _mode: TransportMode, _timeMinutes: number): Promise<Isochrone> {
@@ -51,19 +54,20 @@ export class OsrmEngine implements RoutingEngine {
     const dests = destinations.map((_, i) => origins.length + i).join(';')
 
     const res = await fetch(
-      `${this.baseUrl}/table/v1/${profile}/${allCoords}?sources=${sources}&destinations=${dests}&annotations=duration,distance`
+      `${this.baseUrl}/table/v1/${profile}/${allCoords}?sources=${sources}&destinations=${dests}&annotations=duration,distance`,
+      { signal: AbortSignal.timeout(this.timeoutMs) },
     )
 
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new Error(`OSRM matrix error: ${res.status} — ${text}`)
+      throw new Error(`OSRM matrix error: ${res.status} — ${truncateBody(text)}`)
     }
 
     // OSRM returns durations in seconds, distances in metres
-    const data = (await res.json()) as {
+    const data = await safeJson<{
       durations: (number | null)[][]
       distances: (number | null)[][]
-    }
+    }>(res, 'OSRM matrix')
 
     const entries: MatrixEntry[] = []
     for (let oi = 0; oi < origins.length; oi++) {
