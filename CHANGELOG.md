@@ -1,3 +1,10 @@
+## [1.20.3](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.20.2...v1.20.3) (2026-03-07)
+
+
+### Bug Fixes
+
+* resolve mobile demo page scrolling, QR code, and ride distance issues ([1885a00](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/1885a00e3bb12f60c3228ea51017fe121e81f88d))
+
 ## [1.20.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.20.1...v1.20.2) (2026-03-06)
 
 
