@@ -1214,6 +1214,15 @@ footer {
     flex: 1;
   }
 
+  .payment-panel {
+    margin-bottom: 72px;
+  }
+
+  .payment-panel .qr-container svg {
+    max-width: 200px;
+    max-height: 200px;
+  }
+
   footer {
     flex-shrink: 0;
   }

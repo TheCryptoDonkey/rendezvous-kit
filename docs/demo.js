@@ -1070,8 +1070,8 @@ function showPaymentUI(bolt11, macaroon, paymentHash, amountSats) {
     <div class="status">Waiting for payment...</div>
   `
 
-  // Scroll payment panel into view on mobile
-  requestAnimationFrame(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
+  // Scroll payment panel into view on mobile — use 'start' to show header first
+  requestAnimationFrame(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }))
 
   // Copy button
   panel.querySelector('.copy-btn').addEventListener('click', () => {
