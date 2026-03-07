@@ -1176,7 +1176,10 @@ footer {
 @media (max-width: 768px) {
   header { flex-wrap: wrap; gap: 0.5rem; }
 
-  main { flex-direction: column; }
+  main {
+    flex-direction: column;
+    overflow: hidden;
+  }
 
   #map {
     flex: none;
@@ -1184,11 +1187,13 @@ footer {
   }
 
   aside#panel {
-    flex: none;
+    flex: 1;
+    min-height: 0;
     max-width: none;
     border-left: none;
     border-top: 1px solid var(--border);
     padding-bottom: 72px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .action-bar {
@@ -1207,5 +1212,9 @@ footer {
   .action-bar .btn-find,
   .action-bar .btn-clear {
     flex: 1;
+  }
+
+  footer {
+    flex-shrink: 0;
   }
 }
