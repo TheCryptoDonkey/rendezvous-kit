@@ -4,7 +4,9 @@
 import { ValhallaEngine, ValhallaError, intersectPolygonsAll, searchVenues }
   from 'https://esm.sh/rendezvous-kit@1.20.1'
 
-import qrcode from 'https://esm.sh/qrcode-generator@1.4.4'
+import _qrcode from 'https://esm.sh/qrcode-generator@1.4.4'
+// qrcode-generator CJS→ESM: default export may be the function itself or wrapped
+const qrcode = typeof _qrcode === 'function' ? _qrcode : (_qrcode && _qrcode.default || null)
 
 const COLOURS = ['#ff44ff', '#00e5ff', '#00ff88', '#ffaa00', '#aa55ff']
 const INTERSECTION_COLOUR = '#4488ff'
@@ -1046,20 +1048,30 @@ function showPaymentUI(bolt11, macaroon, paymentHash, amountSats) {
   const panel = document.getElementById('payment-panel')
   panel.classList.remove('hidden', 'paid')
 
-  // Generate QR code
-  const qr = qrcode(0, 'L')
-  qr.addData(bolt11.toUpperCase())
-  qr.make()
-  const qrSvg = qr.createSvgTag({ cellSize: 4, margin: 2 })
+  // Generate QR code with fallback
+  let qrHtml = ''
+  try {
+    if (!qrcode) throw new Error('QR library not loaded')
+    const qr = qrcode(0, 'L')
+    qr.addData(bolt11.toUpperCase())
+    qr.make()
+    qrHtml = `<div class="qr-container">${qr.createSvgTag({ cellSize: 4, margin: 2 })}</div>`
+  } catch (e) {
+    console.warn('QR code generation failed, using text fallback:', e)
+    qrHtml = `<div class="qr-fallback" style="word-break:break-all;font-size:11px;color:var(--text-muted);padding:8px;background:var(--bg-card);border-radius:4px;margin-bottom:8px;">${esc(bolt11)}</div>`
+  }
 
   panel.innerHTML = `
     <h4>Lightning Payment Required</h4>
     <div class="amount">${amountSats != null ? esc(String(amountSats)) + ' sats' : 'Amount in invoice'}</div>
-    <div class="qr-container">${qrSvg}</div>
+    ${qrHtml}
     <button class="copy-btn">Copy invoice</button>
     <button class="cancel-btn">Cancel</button>
     <div class="status">Waiting for payment...</div>
   `
+
+  // Scroll payment panel into view on mobile
+  requestAnimationFrame(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
 
   // Copy button
   panel.querySelector('.copy-btn').addEventListener('click', () => {
@@ -1866,6 +1878,19 @@ function renderDirections() {
     ? interactiveParticipants
     : (currentScenario?.participants ?? [])
 
+  // Enrich result-times spans with ride distance from computed routes
+  const timeSpans = selectedCard.querySelectorAll('.result-times span')
+  for (const span of timeSpans) {
+    const text = span.textContent
+    // Match "Label: Xmin" and append distance
+    for (const [index, route] of currentRoutes) {
+      const label = participants[index]?.label ?? PARTICIPANT_LABELS[index]
+      if (text.startsWith(label + ':') && !text.includes('km')) {
+        span.textContent = `${label}: ${route.durationMinutes.toFixed(1)}min / ${route.distanceKm.toFixed(1)}km`
+      }
+    }
+  }
+
   const section = document.createElement('div')
   section.className = 'directions-section'
 
@@ -1965,6 +1990,9 @@ function renderDirections() {
 
   // Append directions section inside the selected result card
   selectedCard.appendChild(section)
+
+  // Scroll directions into view on mobile so ride distance is visible
+  requestAnimationFrame(() => section.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
 }
 
 function displayResults() {
