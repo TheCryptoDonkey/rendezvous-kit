@@ -1195,6 +1195,11 @@ footer {
   margin-top: 3px;
 }
 
+/* --- Sheet handle (hidden on desktop) --- */
+.sheet-handle {
+  display: none;
+}
+
 /* --- Utility --- */
 .hidden { display: none !important; }
 
@@ -1215,49 +1220,175 @@ footer {
   --score: #008844;
 }
 
-/* --- Responsive --- */
+/* --- Responsive: mobile bottom sheet --- */
 @media (max-width: 768px) {
-  header { flex-wrap: wrap; gap: 0.5rem; }
+  header {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    padding: 8px 12px;
+  }
+
+  .tagline,
+  .version-badge,
+  .header-right a {
+    display: none;
+  }
+
+  .header-right {
+    gap: 0.5rem;
+  }
 
   main {
     flex-direction: column;
+    position: relative;
     overflow: hidden;
   }
 
   #map {
     flex: none;
-    height: 50vh;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
   }
 
   aside#panel {
-    flex: 1;
-    min-height: 0;
-    max-width: none;
-    border-left: none;
-    border-top: 1px solid var(--border);
-    padding-bottom: 72px;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .action-bar {
-    position: fixed;
+    position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 12px 16px;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
+    max-width: none;
+    min-width: 0;
+    border-left: none;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 20;
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    will-change: transform;
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    padding-top: 0;
+    padding-bottom: 24px;
+  }
+
+  /* Sheet handle */
+  .sheet-handle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 0 8px;
+    cursor: grab;
+    touch-action: none;
+    position: sticky;
+    top: 0;
+    background: var(--bg-panel);
+    z-index: 1;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .sheet-handle-bar {
+    width: 40px;
+    height: 4px;
+    background: var(--text-dim);
+    border-radius: 2px;
+  }
+
+  /* Touch targets */
+  .venue-chip {
+    padding: 8px 14px;
+    font-size: 13px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .mode-btn, .strategy-btn {
+    padding: 10px 8px;
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .participant-chip .chip-remove {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .tab {
+    padding: 8px 12px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .theme-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  input[type="range"] {
+    height: 44px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Action bar: sits inside sheet, not fixed */
+  .action-bar {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 0 0;
+    background: var(--bg-panel);
     display: flex;
     gap: 8px;
-    z-index: 10;
+    z-index: 2;
   }
 
   .action-bar .btn-find,
   .action-bar .btn-clear {
     flex: 1;
+    min-height: 48px;
+    font-size: 15px;
   }
 
+  /* Payment panel: ensure QR is large enough */
+  .payment-panel .qr-container {
+    padding: 16px;
+  }
+
+  .payment-panel .qr-container svg {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 280px;
+  }
+
+  .payment-panel .wallet-btn {
+    min-height: 48px;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Hide footer code panel on mobile */
   footer {
-    flex-shrink: 0;
+    display: none;
+  }
+
+  /* Select elements need 44px height */
+  select {
+    min-height: 44px;
   }
 }
