@@ -1,3 +1,20 @@
+# [1.21.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.20.3...v1.21.0) (2026-03-08)
+
+
+### Bug Fixes
+
+* polish mobile UX — cache bust, wallet button visibility ([6a44688](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/6a44688d956a2682f1c6119ed1ed3ff636244a11))
+* prevent initial flash on mobile, use matchMedia for resize ([01eb176](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/01eb17695dd80fc6aa440a9c848c51196ff5eefd))
+* replace flaky QR library with dynamic import and lightning: URI ([2d7e47e](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/2d7e47e905f49e3577f61b15190dcffc526e3a98))
+
+
+### Features
+
+* add bottom sheet drag handle to panel HTML ([6047d1a](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/6047d1a2a88e8904c63e7272ee4dc7fe5d7393cb))
+* bottom sheet CSS with touch targets and mobile header ([d7ae484](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/d7ae4841e85819981248da557a31a99d8736a663))
+* bottom sheet touch handling with auto-transitions ([ab21523](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/ab2152382abb73c5d3bb4a75f4343a5c32b0fba9))
+* mobile UX overhaul — bottom sheet, QR fix, touch targets ([8499f00](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/8499f009b1fa6f9b20e82365a47f5769b27ba76b))
+
 ## [1.20.3](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.20.2...v1.20.3) (2026-03-07)
 
 
