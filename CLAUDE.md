@@ -35,3 +35,16 @@ npm run build      # tsc → dist/
 npm test           # vitest run
 npm run typecheck  # tsc --noEmit
 ```
+
+## Release & Versioning
+
+**Automated via semantic-release** — version bumps and npm publishing happen automatically when you push to `main`.
+
+| Type | Version Bump |
+|------|--------------|
+| `fix:` | Patch (1.0.x) |
+| `feat:` | Minor (1.x.0) |
+| `BREAKING CHANGE:` (in commit body) | Major (x.0.0) |
+| `chore:`, `docs:`, `refactor:` | None |
+
+Tests must pass before release. GitHub Actions uses OIDC trusted publishing. **Work on branches** — merge to main only when a logical chunk is complete to avoid version spam.
