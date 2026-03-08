@@ -4,9 +4,11 @@
 import { ValhallaEngine, ValhallaError, intersectPolygonsAll, searchVenues }
   from 'https://esm.sh/rendezvous-kit@1.20.1'
 
-import _qrcode from 'https://esm.sh/qrcode-generator@1.4.4'
-// qrcode-generator CJS→ESM: default export may be the function itself or wrapped
-const qrcode = typeof _qrcode === 'function' ? _qrcode : (_qrcode && _qrcode.default || null)
+// QR code library — loaded dynamically to avoid CJS→ESM breakage at module init
+let _QRCode = null
+const _qrReady = import('https://esm.sh/qrcode@1.5.4')
+  .then(mod => { _QRCode = mod.default || mod })
+  .catch(e => console.warn('QR library failed to load:', e))
 
 const COLOURS = ['#ff44ff', '#00e5ff', '#00ff88', '#ffaa00', '#aa55ff']
 const INTERSECTION_COLOUR = '#4488ff'
@@ -36,6 +38,14 @@ const PARTICIPANT_LABELS = ['A', 'B', 'C', 'D', 'E']
 const VALHALLA_URL = 'https://routing.trotters.cc'
 const OVERPASS_URL = 'https://overpass.trotters.cc/api/interpreter'
 const L402_STORAGE_KEY = 'rendezvous-l402'
+
+// --- Bottom sheet state (mobile) ---
+const SHEET_PEEK = 72     // px from bottom
+const SHEET_HALF = 0.5    // fraction of viewport
+const SHEET_FULL = 0.9    // fraction of viewport
+let sheetState = 'half'   // 'peek' | 'half' | 'full'
+let sheetEl = null        // set in init()
+let isMobile = false      // updated on resize
 
 // --- Manoeuvre type → SVG icon map ---
 // Valhalla type values: https://valhalla.github.io/valhalla/api/turn-by-turn/api-reference/
@@ -321,6 +331,9 @@ function init() {
 
   // Restore L402 token and create engine
   interactiveEngine = createEngine()
+
+  // Initialise bottom sheet for mobile
+  initSheet()
 }
 
 // --- Theme ---
@@ -471,6 +484,7 @@ function switchMode(isInteractive) {
     interactiveResults = null
     map.getCanvas().style.cursor = 'crosshair'
     document.getElementById('code-content').textContent = ''
+    if (isMobile) setSheetState('half')
     // Sync interactive fairness picker to current value
     document.getElementById('interactive-fairness').value = currentFairness
   } else {
@@ -483,6 +497,7 @@ function switchMode(isInteractive) {
     // Reload current scenario
     const picker = document.getElementById('scenario-picker')
     loadScenario(picker.value)
+    if (isMobile) setSheetState('half')
   }
 }
 
@@ -528,6 +543,8 @@ function addInteractiveParticipant(lat, lon) {
   updateParticipantList()
   updateFindButton()
   hideError()
+  // Drop sheet to peek so map is maximised for placing markers
+  if (isMobile) setSheetState('peek')
 }
 
 function removeParticipant(index) {
@@ -608,6 +625,7 @@ function clearInteractive() {
   hideError()
   document.getElementById('payment-panel').classList.add('hidden')
   document.getElementById('code-content').textContent = ''
+  if (isMobile) setSheetState('half')
   resetFindButton()
 }
 
@@ -847,6 +865,7 @@ async function runInteractive() {
       markStep('venues', topVenues.length)
       displayResults()
       markStep('scored')
+      if (isMobile) setSheetState('full')
       fitToScenario(currentScenario)
       updateInteractiveCodePanel()
 
@@ -999,6 +1018,7 @@ async function runInteractive() {
       markStep('venues', topVenues.length)
       displayResults()
       markStep('scored')
+      if (isMobile) setSheetState('full')
 
       // Fit map
       fitToScenario(currentScenario)
@@ -1042,33 +1062,53 @@ function handlePaymentRequired(err) {
   }
 
   showPaymentUI(invoice, macaroon, payment_hash, amount_sats)
+  if (isMobile) setSheetState('full')
+}
+
+function qrFallbackHtml(bolt11) {
+  return `<a href="lightning:${esc(bolt11)}" class="qr-fallback-link">
+    <div class="qr-fallback">${esc(bolt11)}</div>
+  </a>`
 }
 
 function showPaymentUI(bolt11, macaroon, paymentHash, amountSats) {
   const panel = document.getElementById('payment-panel')
   panel.classList.remove('hidden', 'paid')
 
-  // Generate QR code with fallback
-  let qrHtml = ''
-  try {
-    if (!qrcode) throw new Error('QR library not loaded')
-    const qr = qrcode(0, 'L')
-    qr.addData(bolt11.toUpperCase())
-    qr.make()
-    qrHtml = `<div class="qr-container">${qr.createSvgTag({ cellSize: 4, margin: 2 })}</div>`
-  } catch (e) {
-    console.warn('QR code generation failed, using text fallback:', e)
-    qrHtml = `<div class="qr-fallback" style="word-break:break-all;font-size:11px;color:var(--text-muted);padding:8px;background:var(--bg-card);border-radius:4px;margin-bottom:8px;">${esc(bolt11)}</div>`
-  }
-
   panel.innerHTML = `
     <h4>Lightning Payment Required</h4>
     <div class="amount">${amountSats != null ? esc(String(amountSats)) + ' sats' : 'Amount in invoice'}</div>
-    ${qrHtml}
+    <div class="qr-placeholder"><div class="qr-loading" style="padding:20px;color:var(--text-dim);font-size:13px;">Generating QR...</div></div>
+    <a href="lightning:${esc(bolt11)}" class="wallet-btn">Open in wallet</a>
     <button class="copy-btn">Copy invoice</button>
     <button class="cancel-btn">Cancel</button>
     <div class="status">Waiting for payment...</div>
   `
+
+  // Render QR asynchronously after panel is shown
+  const renderQR = async () => {
+    await _qrReady
+    const container = panel.querySelector('.qr-placeholder')
+    if (!container) return
+
+    if (_QRCode && _QRCode.toString) {
+      try {
+        const svg = await _QRCode.toString(bolt11.toUpperCase(), {
+          type: 'svg',
+          width: 280,
+          errorCorrectionLevel: 'L',
+          margin: 2,
+        })
+        container.innerHTML = `<a href="lightning:${esc(bolt11)}" class="qr-link"><div class="qr-container">${svg}</div></a>`
+      } catch (e) {
+        console.warn('QR generation failed:', e)
+        container.innerHTML = qrFallbackHtml(bolt11)
+      }
+    } else {
+      container.innerHTML = qrFallbackHtml(bolt11)
+    }
+  }
+  renderQR()
 
   // Scroll payment panel into view on mobile
   requestAnimationFrame(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
@@ -1152,6 +1192,123 @@ function cancelPayment() {
   document.getElementById('payment-panel').classList.add('hidden')
   resetFindButton()
   resetPipeline()
+}
+
+// --- Bottom sheet (mobile) ---
+
+function initSheet() {
+  sheetEl = document.getElementById('panel')
+  const handle = document.getElementById('sheet-handle')
+  if (!handle || !sheetEl) return
+
+  checkMobile()
+  const mq = window.matchMedia('(max-width: 768px)')
+  mq.addEventListener('change', () => checkMobile())
+
+  let startY = 0
+  let startTranslate = 0
+  let dragging = false
+
+  handle.addEventListener('touchstart', (e) => {
+    if (!isMobile) return
+    dragging = true
+    startY = e.touches[0].clientY
+    startTranslate = getCurrentTranslateY()
+    sheetEl.style.transition = 'none'
+  }, { passive: true })
+
+  handle.addEventListener('touchmove', (e) => {
+    if (!dragging || !isMobile) return
+    e.preventDefault()
+    const dy = e.touches[0].clientY - startY
+    const newY = Math.max(0, startTranslate + dy)
+    sheetEl.style.transform = `translateY(${newY}px)`
+  }, { passive: false })
+
+  handle.addEventListener('touchend', () => {
+    if (!dragging || !isMobile) return
+    dragging = false
+    sheetEl.style.transition = ''
+    snapSheet()
+  })
+
+  // Also handle mouse for testing in desktop devtools
+  handle.addEventListener('mousedown', (e) => {
+    if (!isMobile) return
+    dragging = true
+    startY = e.clientY
+    startTranslate = getCurrentTranslateY()
+    sheetEl.style.transition = 'none'
+
+    const onMove = (e) => {
+      if (!dragging) return
+      const dy = e.clientY - startY
+      const newY = Math.max(0, startTranslate + dy)
+      sheetEl.style.transform = `translateY(${newY}px)`
+    }
+
+    const onUp = () => {
+      dragging = false
+      sheetEl.style.transition = ''
+      snapSheet()
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  })
+}
+
+function checkMobile() {
+  isMobile = window.innerWidth <= 768
+  if (isMobile) {
+    setSheetState(sheetState)
+  } else {
+    // Desktop: clear any transforms
+    if (sheetEl) sheetEl.style.transform = ''
+  }
+}
+
+function getCurrentTranslateY() {
+  if (!sheetEl) return 0
+  const transform = getComputedStyle(sheetEl).transform
+  if (transform === 'none') return 0
+  const matrix = new DOMMatrix(transform)
+  return matrix.m42
+}
+
+function getSheetTranslateY(state) {
+  const vh = window.innerHeight
+  switch (state) {
+    case 'peek': return vh - SHEET_PEEK
+    case 'half': return vh * (1 - SHEET_HALF)
+    case 'full': return vh * (1 - SHEET_FULL)
+    default: return vh * (1 - SHEET_HALF)
+  }
+}
+
+function snapSheet() {
+  const currentY = getCurrentTranslateY()
+  const peekY = getSheetTranslateY('peek')
+  const halfY = getSheetTranslateY('half')
+  const fullY = getSheetTranslateY('full')
+
+  // Find nearest snap point
+  const distances = [
+    { state: 'full', dist: Math.abs(currentY - fullY) },
+    { state: 'half', dist: Math.abs(currentY - halfY) },
+    { state: 'peek', dist: Math.abs(currentY - peekY) },
+  ]
+  distances.sort((a, b) => a.dist - b.dist)
+  setSheetState(distances[0].state)
+}
+
+function setSheetState(state) {
+  if (!isMobile || !sheetEl) return
+  sheetState = state
+  const y = getSheetTranslateY(state)
+  sheetEl.style.transform = `translateY(${y}px)`
 }
 
 // --- Route display ---
