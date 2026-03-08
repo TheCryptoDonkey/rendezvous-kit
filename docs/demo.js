@@ -4,9 +4,11 @@
 import { ValhallaEngine, ValhallaError, intersectPolygonsAll, searchVenues }
   from 'https://esm.sh/rendezvous-kit@1.20.1'
 
-import _qrcode from 'https://esm.sh/qrcode-generator@1.4.4'
-// qrcode-generator CJS→ESM: default export may be the function itself or wrapped
-const qrcode = typeof _qrcode === 'function' ? _qrcode : (_qrcode && _qrcode.default || null)
+// QR code library — loaded dynamically to avoid CJS→ESM breakage at module init
+let _QRCode = null
+const _qrReady = import('https://esm.sh/qrcode@1.5.4')
+  .then(mod => { _QRCode = mod.default || mod })
+  .catch(e => console.warn('QR library failed to load:', e))
 
 const COLOURS = ['#ff44ff', '#00e5ff', '#00ff88', '#ffaa00', '#aa55ff']
 const INTERSECTION_COLOUR = '#4488ff'
@@ -1044,31 +1046,50 @@ function handlePaymentRequired(err) {
   showPaymentUI(invoice, macaroon, payment_hash, amount_sats)
 }
 
+function qrFallbackHtml(bolt11) {
+  return `<a href="lightning:${esc(bolt11)}" class="qr-fallback-link">
+    <div class="qr-fallback">${esc(bolt11)}</div>
+  </a>`
+}
+
 function showPaymentUI(bolt11, macaroon, paymentHash, amountSats) {
   const panel = document.getElementById('payment-panel')
   panel.classList.remove('hidden', 'paid')
 
-  // Generate QR code with fallback
-  let qrHtml = ''
-  try {
-    if (!qrcode) throw new Error('QR library not loaded')
-    const qr = qrcode(0, 'L')
-    qr.addData(bolt11.toUpperCase())
-    qr.make()
-    qrHtml = `<div class="qr-container">${qr.createSvgTag({ cellSize: 4, margin: 2 })}</div>`
-  } catch (e) {
-    console.warn('QR code generation failed, using text fallback:', e)
-    qrHtml = `<div class="qr-fallback" style="word-break:break-all;font-size:11px;color:var(--text-muted);padding:8px;background:var(--bg-card);border-radius:4px;margin-bottom:8px;">${esc(bolt11)}</div>`
-  }
-
   panel.innerHTML = `
     <h4>Lightning Payment Required</h4>
     <div class="amount">${amountSats != null ? esc(String(amountSats)) + ' sats' : 'Amount in invoice'}</div>
-    ${qrHtml}
+    <div class="qr-placeholder"><div class="qr-loading" style="padding:20px;color:var(--text-dim);font-size:13px;">Generating QR...</div></div>
+    <a href="lightning:${esc(bolt11)}" class="wallet-btn">Open in wallet</a>
     <button class="copy-btn">Copy invoice</button>
     <button class="cancel-btn">Cancel</button>
     <div class="status">Waiting for payment...</div>
   `
+
+  // Render QR asynchronously after panel is shown
+  const renderQR = async () => {
+    await _qrReady
+    const container = panel.querySelector('.qr-placeholder')
+    if (!container) return
+
+    if (_QRCode && _QRCode.toString) {
+      try {
+        const svg = await _QRCode.toString(bolt11.toUpperCase(), {
+          type: 'svg',
+          width: 280,
+          errorCorrectionLevel: 'L',
+          margin: 2,
+        })
+        container.innerHTML = `<a href="lightning:${esc(bolt11)}" class="qr-link"><div class="qr-container">${svg}</div></a>`
+      } catch (e) {
+        console.warn('QR generation failed:', e)
+        container.innerHTML = qrFallbackHtml(bolt11)
+      }
+    } else {
+      container.innerHTML = qrFallbackHtml(bolt11)
+    }
+  }
+  renderQR()
 
   // Scroll payment panel into view on mobile
   requestAnimationFrame(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
