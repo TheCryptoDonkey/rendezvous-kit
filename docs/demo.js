@@ -39,6 +39,14 @@ const VALHALLA_URL = 'https://routing.trotters.cc'
 const OVERPASS_URL = 'https://overpass.trotters.cc/api/interpreter'
 const L402_STORAGE_KEY = 'rendezvous-l402'
 
+// --- Bottom sheet state (mobile) ---
+const SHEET_PEEK = 72     // px from bottom
+const SHEET_HALF = 0.5    // fraction of viewport
+const SHEET_FULL = 0.9    // fraction of viewport
+let sheetState = 'half'   // 'peek' | 'half' | 'full'
+let sheetEl = null        // set in init()
+let isMobile = false      // updated on resize
+
 // --- Manoeuvre type → SVG icon map ---
 // Valhalla type values: https://valhalla.github.io/valhalla/api/turn-by-turn/api-reference/
 const MANOEUVRE_ICONS = {
@@ -323,6 +331,9 @@ function init() {
 
   // Restore L402 token and create engine
   interactiveEngine = createEngine()
+
+  // Initialise bottom sheet for mobile
+  initSheet()
 }
 
 // --- Theme ---
@@ -473,6 +484,7 @@ function switchMode(isInteractive) {
     interactiveResults = null
     map.getCanvas().style.cursor = 'crosshair'
     document.getElementById('code-content').textContent = ''
+    if (isMobile) setSheetState('half')
     // Sync interactive fairness picker to current value
     document.getElementById('interactive-fairness').value = currentFairness
   } else {
@@ -485,6 +497,7 @@ function switchMode(isInteractive) {
     // Reload current scenario
     const picker = document.getElementById('scenario-picker')
     loadScenario(picker.value)
+    if (isMobile) setSheetState('half')
   }
 }
 
@@ -530,6 +543,8 @@ function addInteractiveParticipant(lat, lon) {
   updateParticipantList()
   updateFindButton()
   hideError()
+  // Drop sheet to peek so map is maximised for placing markers
+  if (isMobile) setSheetState('peek')
 }
 
 function removeParticipant(index) {
@@ -610,6 +625,7 @@ function clearInteractive() {
   hideError()
   document.getElementById('payment-panel').classList.add('hidden')
   document.getElementById('code-content').textContent = ''
+  if (isMobile) setSheetState('half')
   resetFindButton()
 }
 
@@ -849,6 +865,7 @@ async function runInteractive() {
       markStep('venues', topVenues.length)
       displayResults()
       markStep('scored')
+      if (isMobile) setSheetState('full')
       fitToScenario(currentScenario)
       updateInteractiveCodePanel()
 
@@ -1001,6 +1018,7 @@ async function runInteractive() {
       markStep('venues', topVenues.length)
       displayResults()
       markStep('scored')
+      if (isMobile) setSheetState('full')
 
       // Fit map
       fitToScenario(currentScenario)
@@ -1044,6 +1062,7 @@ function handlePaymentRequired(err) {
   }
 
   showPaymentUI(invoice, macaroon, payment_hash, amount_sats)
+  if (isMobile) setSheetState('full')
 }
 
 function qrFallbackHtml(bolt11) {
@@ -1173,6 +1192,122 @@ function cancelPayment() {
   document.getElementById('payment-panel').classList.add('hidden')
   resetFindButton()
   resetPipeline()
+}
+
+// --- Bottom sheet (mobile) ---
+
+function initSheet() {
+  sheetEl = document.getElementById('panel')
+  const handle = document.getElementById('sheet-handle')
+  if (!handle || !sheetEl) return
+
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+
+  let startY = 0
+  let startTranslate = 0
+  let dragging = false
+
+  handle.addEventListener('touchstart', (e) => {
+    if (!isMobile) return
+    dragging = true
+    startY = e.touches[0].clientY
+    startTranslate = getCurrentTranslateY()
+    sheetEl.style.transition = 'none'
+  }, { passive: true })
+
+  handle.addEventListener('touchmove', (e) => {
+    if (!dragging || !isMobile) return
+    e.preventDefault()
+    const dy = e.touches[0].clientY - startY
+    const newY = Math.max(0, startTranslate + dy)
+    sheetEl.style.transform = `translateY(${newY}px)`
+  }, { passive: false })
+
+  handle.addEventListener('touchend', () => {
+    if (!dragging || !isMobile) return
+    dragging = false
+    sheetEl.style.transition = ''
+    snapSheet()
+  })
+
+  // Also handle mouse for testing in desktop devtools
+  handle.addEventListener('mousedown', (e) => {
+    if (!isMobile) return
+    dragging = true
+    startY = e.clientY
+    startTranslate = getCurrentTranslateY()
+    sheetEl.style.transition = 'none'
+
+    const onMove = (e) => {
+      if (!dragging) return
+      const dy = e.clientY - startY
+      const newY = Math.max(0, startTranslate + dy)
+      sheetEl.style.transform = `translateY(${newY}px)`
+    }
+
+    const onUp = () => {
+      dragging = false
+      sheetEl.style.transition = ''
+      snapSheet()
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  })
+}
+
+function checkMobile() {
+  isMobile = window.innerWidth <= 768
+  if (isMobile) {
+    setSheetState(sheetState)
+  } else {
+    // Desktop: clear any transforms
+    if (sheetEl) sheetEl.style.transform = ''
+  }
+}
+
+function getCurrentTranslateY() {
+  if (!sheetEl) return 0
+  const transform = getComputedStyle(sheetEl).transform
+  if (transform === 'none') return 0
+  const matrix = new DOMMatrix(transform)
+  return matrix.m42
+}
+
+function getSheetTranslateY(state) {
+  const vh = window.innerHeight
+  switch (state) {
+    case 'peek': return vh - SHEET_PEEK
+    case 'half': return vh * (1 - SHEET_HALF)
+    case 'full': return vh * (1 - SHEET_FULL)
+    default: return vh * (1 - SHEET_HALF)
+  }
+}
+
+function snapSheet() {
+  const currentY = getCurrentTranslateY()
+  const peekY = getSheetTranslateY('peek')
+  const halfY = getSheetTranslateY('half')
+  const fullY = getSheetTranslateY('full')
+
+  // Find nearest snap point
+  const distances = [
+    { state: 'full', dist: Math.abs(currentY - fullY) },
+    { state: 'half', dist: Math.abs(currentY - halfY) },
+    { state: 'peek', dist: Math.abs(currentY - peekY) },
+  ]
+  distances.sort((a, b) => a.dist - b.dist)
+  setSheetState(distances[0].state)
+}
+
+function setSheetState(state) {
+  if (!isMobile || !sheetEl) return
+  sheetState = state
+  const y = getSheetTranslateY(state)
+  sheetEl.style.transform = `translateY(${y}px)`
 }
 
 // --- Route display ---
