@@ -1202,7 +1202,8 @@ function initSheet() {
   if (!handle || !sheetEl) return
 
   checkMobile()
-  window.addEventListener('resize', checkMobile)
+  const mq = window.matchMedia('(max-width: 768px)')
+  mq.addEventListener('change', () => checkMobile())
 
   let startY = 0
   let startTranslate = 0
