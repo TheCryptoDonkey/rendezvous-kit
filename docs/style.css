@@ -1018,7 +1018,7 @@ footer {
 }
 
 .payment-panel .wallet-btn {
-  display: block;
+  display: none;
   width: 100%;
   padding: 10px 16px;
   background: #f7931a;
