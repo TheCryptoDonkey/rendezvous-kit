@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.21.0...v1.21.1) (2026-03-10)
+
+
+### Bug Fixes
+
+* update geohash-kit to version with convexHull export ([b26858f](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/b26858f6c52e3e7cf73db66c274ac82c92f7ec7d))
+
 # [1.21.0](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.20.3...v1.21.0) (2026-03-08)
 
 
