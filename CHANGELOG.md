@@ -1,3 +1,10 @@
+## [1.21.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.21.1...v1.21.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* pass status token when polling invoice-status endpoint ([3d8fcc4](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/3d8fcc426b92cc90140681a1e009c88b39fa6bca))
+
 ## [1.21.1](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.21.0...v1.21.1) (2026-03-10)
 
 
