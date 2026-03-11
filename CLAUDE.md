@@ -34,7 +34,21 @@ src/
 npm run build      # tsc → dist/
 npm test           # vitest run
 npm run typecheck  # tsc --noEmit
+npm run bench      # performance benchmarks
 ```
+
+## Engine configuration
+
+All engines are configured programmatically (no env vars) — pass URLs and keys to constructors:
+
+| Engine | Required config | Notes |
+|--------|----------------|-------|
+| `ValhallaEngine` | `baseUrl` | Self-hosted or `https://routing.trotters.cc` (L402-gated) |
+| `OpenRouteServiceEngine` | `apiKey` | Free key from openrouteservice.org/dev. `baseUrl` optional override |
+| `GraphHopperEngine` | `baseUrl` | `apiKey` optional (needed for hosted GraphHopper) |
+| `OsrmEngine` | `baseUrl` | Matrix only — no isochrone support |
+
+Overpass venue search uses public endpoints by default. Pass `overpassUrl` to `searchVenues()` to override.
 
 ## Release & Versioning
 
