@@ -2,7 +2,7 @@
 // Uses global maplibregl from CDN script tag
 
 import { ValhallaEngine, ValhallaError, intersectPolygonsAll, searchVenues }
-  from 'https://esm.sh/rendezvous-kit@1.20.1'
+  from 'https://esm.sh/rendezvous-kit@1.21.1'
 
 // QR code library — loaded dynamically to avoid CJS→ESM breakage at module init
 let _QRCode = null
@@ -1053,7 +1053,7 @@ function handlePaymentRequired(err) {
     return
   }
 
-  const { invoice, macaroon, payment_hash, amount_sats } = paymentData
+  const { invoice, macaroon, payment_hash, payment_url, amount_sats } = paymentData
 
   if (!invoice || !macaroon || !payment_hash) {
     showError('Payment required but response is missing required fields.')
@@ -1061,7 +1061,7 @@ function handlePaymentRequired(err) {
     return
   }
 
-  showPaymentUI(invoice, macaroon, payment_hash, amount_sats)
+  showPaymentUI(invoice, macaroon, payment_hash, payment_url, amount_sats)
   if (isMobile) setSheetState('full')
 }
 
@@ -1071,7 +1071,7 @@ function qrFallbackHtml(bolt11) {
   </a>`
 }
 
-function showPaymentUI(bolt11, macaroon, paymentHash, amountSats) {
+function showPaymentUI(bolt11, macaroon, paymentHash, paymentUrl, amountSats) {
   const panel = document.getElementById('payment-panel')
   panel.classList.remove('hidden', 'paid')
 
@@ -1139,27 +1139,34 @@ function showPaymentUI(bolt11, macaroon, paymentHash, amountSats) {
   })
 
   // Start polling
-  pollForPayment(paymentHash, macaroon)
+  pollForPayment(paymentHash, paymentUrl, macaroon)
 }
 
-function pollForPayment(paymentHash, macaroon) {
+function pollForPayment(paymentHash, paymentUrl, macaroon) {
   if (paymentPollTimer) clearInterval(paymentPollTimer)
+
+  // Use payment_url from toll-booth (includes status token) if available,
+  // otherwise fall back to bare path (will 404 without token)
+  const statusUrl = paymentUrl
+    ? `${VALHALLA_URL}${paymentUrl}`
+    : `${VALHALLA_URL}/invoice-status/${paymentHash}`
 
   paymentPollTimer = setInterval(async () => {
     try {
-      const res = await fetch(`${VALHALLA_URL}/invoice-status/${paymentHash}`)
+      const res = await fetch(statusUrl)
       if (!res.ok) return // silent retry
 
       const data = await res.json()
-      if (data.paid && data.preimage) {
+      const tokenSuffix = data.preimage || data.token_suffix
+      if (data.paid && tokenSuffix) {
         // Payment confirmed!
         clearInterval(paymentPollTimer)
         paymentPollTimer = null
 
-        // Store L402 token
+        // Store L402 token (preimage for Lightning, token_suffix for Cashu)
         localStorage.setItem(L402_STORAGE_KEY, JSON.stringify({
           macaroon,
-          preimage: data.preimage,
+          preimage: tokenSuffix,
         }))
 
         // Create authenticated engine
