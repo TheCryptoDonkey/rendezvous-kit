@@ -56,6 +56,9 @@ export async function searchVenues(
     validateHttpUrl(overpassUrl, 'searchVenues overpassUrl')
   }
   const clampedLimit = Math.max(1, Math.min(1000, Math.round(resultLimit)))
+  if (venueTypes.length > 20) {
+    throw new RangeError(`Too many venue types: ${venueTypes.length} (max 20)`)
+  }
 
   const bbox = polygonBBox(polygon)
   const bboxStr = `${bbox.south},${bbox.west},${bbox.north},${bbox.east}`

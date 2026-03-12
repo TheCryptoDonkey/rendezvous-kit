@@ -148,6 +148,17 @@ describe('searchVenues', () => {
     expect(query).toContain('out center 1;')
   })
 
+  it('rejects more than 20 venue types', async () => {
+    const polygon: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-2.7, 51.3], [-2.3, 51.3], [-2.3, 51.5], [-2.7, 51.5], [-2.7, 51.3]]]
+    }
+
+    const tooMany = Array.from({ length: 21 }, (_, i) => `type${i}`)
+    await expect(searchVenues(polygon, tooMany))
+      .rejects.toThrow('Too many venue types')
+  })
+
   it('uses configurable result limit', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
