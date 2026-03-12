@@ -1,3 +1,11 @@
+## [1.21.3](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.21.2...v1.21.3) (2026-03-12)
+
+
+### Bug Fixes
+
+* cap maxTimeMinutes and venueTypes array length ([73d9fcd](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/73d9fcd5ebdfee32fe22af6b3bea504c7ec19d51))
+* harden input validation and add production readiness checks ([5eac7ae](https://github.com/TheCryptoDonkey/rendezvous-kit/commit/5eac7aea8141b9008aa423c9dccc6dd6c6c0f157))
+
 ## [1.21.2](https://github.com/TheCryptoDonkey/rendezvous-kit/compare/v1.21.1...v1.21.2) (2026-03-11)
 
 
