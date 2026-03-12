@@ -18,10 +18,28 @@ export async function findRendezvous(
   engine: RoutingEngine,
   options: RendezvousOptions,
 ): Promise<RendezvousSuggestion[]> {
-  const { participants, mode, maxTimeMinutes, venueTypes, fairness = 'min_max', limit = 5, strategy: requestedStrategy = 'auto' } = options
+  const { participants, mode, maxTimeMinutes, venueTypes, fairness = 'min_max', limit: rawLimit = 5, strategy: requestedStrategy = 'auto' } = options
+  const limit = Math.max(1, Math.min(50, Math.round(rawLimit)))
 
   if (participants.length < 2) {
     throw new RangeError('findRendezvous requires at least 2 participants')
+  }
+  if (participants.length > 100) {
+    throw new RangeError('findRendezvous supports at most 100 participants')
+  }
+
+  for (let i = 0; i < participants.length; i++) {
+    const p = participants[i]
+    if (!Number.isFinite(p.lat) || p.lat < -90 || p.lat > 90) {
+      throw new RangeError(`Invalid latitude for participant ${i}: ${p.lat}`)
+    }
+    if (!Number.isFinite(p.lon) || p.lon < -180 || p.lon > 180) {
+      throw new RangeError(`Invalid longitude for participant ${i}: ${p.lon}`)
+    }
+  }
+
+  if (!Number.isFinite(maxTimeMinutes) || maxTimeMinutes <= 0) {
+    throw new RangeError(`Invalid maxTimeMinutes: ${maxTimeMinutes}`)
   }
 
   // Resolve pipeline strategy

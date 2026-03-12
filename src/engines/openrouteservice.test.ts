@@ -113,3 +113,13 @@ describe('OpenRouteServiceEngine', () => {
     })
   })
 })
+
+describe('OpenRouteServiceEngine constructor validation', () => {
+  it('rejects non-http baseUrl', () => {
+    expect(() => new OpenRouteServiceEngine({ apiKey: 'k', baseUrl: 'ftp://evil.com' })).toThrow(TypeError)
+  })
+
+  it('throws for zero timeoutMs', () => {
+    expect(() => new OpenRouteServiceEngine({ apiKey: 'k', timeoutMs: 0 })).toThrow(RangeError)
+  })
+})

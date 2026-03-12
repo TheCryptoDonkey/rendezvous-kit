@@ -1,5 +1,5 @@
 import type { RoutingEngine, Isochrone, RouteMatrix, RouteGeometry, LatLon, TransportMode } from '../types.js'
-import { validateHttpUrl, safeJson, truncateBody } from '../validate.js'
+import { validateHttpUrl, validateTimeout, safeJson, truncateBody } from '../validate.js'
 
 const ORS_BASE = 'https://api.openrouteservice.org'
 
@@ -43,7 +43,7 @@ export class OpenRouteServiceEngine implements RoutingEngine {
     this.baseUrl = options.baseUrl
       ? validateHttpUrl(options.baseUrl, 'OpenRouteServiceEngine baseUrl')
       : ORS_BASE
-    this.timeoutMs = options.timeoutMs ?? 30_000
+    this.timeoutMs = validateTimeout(options.timeoutMs, 'OpenRouteServiceEngine')
   }
 
   async computeIsochrone(origin: LatLon, mode: TransportMode, timeMinutes: number): Promise<Isochrone> {

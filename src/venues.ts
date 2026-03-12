@@ -1,5 +1,5 @@
 import type { GeoJSONPolygon, Venue, VenueType } from './types.js'
-import { safeJson, truncateBody } from './validate.js'
+import { safeJson, truncateBody, validateHttpUrl } from './validate.js'
 
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
@@ -52,6 +52,11 @@ export async function searchVenues(
   overpassUrl?: string,
   resultLimit = 200,
 ): Promise<Venue[]> {
+  if (overpassUrl !== undefined) {
+    validateHttpUrl(overpassUrl, 'searchVenues overpassUrl')
+  }
+  const clampedLimit = Math.max(1, Math.min(1000, Math.round(resultLimit)))
+
   const bbox = polygonBBox(polygon)
   const bboxStr = `${bbox.south},${bbox.west},${bbox.north},${bbox.east}`
 
@@ -73,7 +78,7 @@ export async function searchVenues(
     })
     .join('\n')
 
-  const query = `[out:json][timeout:25];(\n${tagQueries}\n);out center ${resultLimit};`
+  const query = `[out:json][timeout:25];(\n${tagQueries}\n);out center ${clampedLimit};`
   const body = `data=${encodeURIComponent(query)}`
 
   const endpoints = overpassUrl ? [overpassUrl] : OVERPASS_ENDPOINTS

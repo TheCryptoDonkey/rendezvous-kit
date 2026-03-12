@@ -2,7 +2,7 @@ import type {
   RoutingEngine, Isochrone, RouteMatrix, RouteGeometry, MatrixEntry,
   TransportMode, LatLon, GeoJSONPolygon, RouteLeg,
 } from '../types.js'
-import { validateHttpUrl, safeJson, truncateBody } from '../validate.js'
+import { validateHttpUrl, validateTimeout, safeJson, truncateBody } from '../validate.js'
 
 /**
  * Error thrown by ValhallaEngine when the server returns a non-200 response.
@@ -83,7 +83,7 @@ export class ValhallaEngine implements RoutingEngine {
   constructor(config: { baseUrl: string; headers?: Record<string, string>; timeoutMs?: number }) {
     this.baseUrl = validateHttpUrl(config.baseUrl, 'ValhallaEngine baseUrl')
     this.extraHeaders = config.headers ?? {}
-    this.timeoutMs = config.timeoutMs ?? 30_000
+    this.timeoutMs = validateTimeout(config.timeoutMs, 'ValhallaEngine')
   }
 
   async computeIsochrone(

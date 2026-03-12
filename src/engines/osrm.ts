@@ -2,7 +2,7 @@ import type {
   RoutingEngine, Isochrone, RouteMatrix, RouteGeometry, MatrixEntry,
   TransportMode, LatLon,
 } from '../types.js'
-import { validateHttpUrl, safeJson, truncateBody } from '../validate.js'
+import { validateHttpUrl, validateTimeout, safeJson, truncateBody } from '../validate.js'
 
 const PROFILE: Record<TransportMode, string> = {
   drive: 'car',
@@ -32,7 +32,7 @@ export class OsrmEngine implements RoutingEngine {
 
   constructor(config: { baseUrl: string; timeoutMs?: number }) {
     this.baseUrl = validateHttpUrl(config.baseUrl, 'OsrmEngine baseUrl')
-    this.timeoutMs = config.timeoutMs ?? 30_000
+    this.timeoutMs = validateTimeout(config.timeoutMs, 'OsrmEngine')
   }
 
   computeIsochrone(_origin: LatLon, _mode: TransportMode, _timeMinutes: number): Promise<Isochrone> {
