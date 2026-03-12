@@ -90,6 +90,64 @@ describe('searchVenues', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2)
   })
 
+  it('rejects non-http overpassUrl', async () => {
+    const polygon: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-2.7, 51.3], [-2.3, 51.3], [-2.3, 51.5], [-2.7, 51.5], [-2.7, 51.3]]]
+    }
+
+    await expect(searchVenues(polygon, ['cafe'], 'ftp://evil.com/api'))
+      .rejects.toThrow('must use http or https')
+  })
+
+  it('rejects file:// overpassUrl', async () => {
+    const polygon: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-2.7, 51.3], [-2.3, 51.3], [-2.3, 51.5], [-2.7, 51.5], [-2.7, 51.3]]]
+    }
+
+    await expect(searchVenues(polygon, ['cafe'], 'file:///etc/passwd'))
+      .rejects.toThrow('must use http or https')
+  })
+
+  it('clamps resultLimit to 1000 max', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ elements: [] })
+    })
+
+    const polygon: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-2.7, 51.3], [-2.3, 51.3], [-2.3, 51.5], [-2.7, 51.5], [-2.7, 51.3]]]
+    }
+
+    await searchVenues(polygon, ['cafe'], undefined, 99999)
+
+    const [, init] = mockFetch.mock.calls[0]
+    const body = (init as RequestInit).body as string
+    const query = decodeURIComponent(body.replace('data=', ''))
+    expect(query).toContain('out center 1000;')
+  })
+
+  it('clamps resultLimit to 1 min', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ elements: [] })
+    })
+
+    const polygon: GeoJSONPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-2.7, 51.3], [-2.3, 51.3], [-2.3, 51.5], [-2.7, 51.5], [-2.7, 51.3]]]
+    }
+
+    await searchVenues(polygon, ['cafe'], undefined, -5)
+
+    const [, init] = mockFetch.mock.calls[0]
+    const body = (init as RequestInit).body as string
+    const query = decodeURIComponent(body.replace('data=', ''))
+    expect(query).toContain('out center 1;')
+  })
+
   it('uses configurable result limit', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,

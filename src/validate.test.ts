@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateHttpUrl, truncateBody, safeJson } from './validate.js'
+import { validateHttpUrl, validateTimeout, truncateBody, safeJson } from './validate.js'
 
 describe('validateHttpUrl', () => {
   it('accepts valid http URL', () => {
@@ -28,6 +28,48 @@ describe('validateHttpUrl', () => {
 
   it('includes label in error message', () => {
     expect(() => validateHttpUrl('ftp://x', 'MyEngine baseUrl')).toThrow('MyEngine baseUrl')
+  })
+})
+
+describe('validateTimeout', () => {
+  it('returns default when undefined', () => {
+    expect(validateTimeout(undefined, 'test')).toBe(30_000)
+  })
+
+  it('accepts valid timeout', () => {
+    expect(validateTimeout(10_000, 'test')).toBe(10_000)
+  })
+
+  it('clamps below minimum to 1000ms', () => {
+    expect(validateTimeout(500, 'test')).toBe(1_000)
+  })
+
+  it('clamps above maximum to 120000ms', () => {
+    expect(validateTimeout(300_000, 'test')).toBe(120_000)
+  })
+
+  it('throws for zero', () => {
+    expect(() => validateTimeout(0, 'test')).toThrow(RangeError)
+  })
+
+  it('throws for negative', () => {
+    expect(() => validateTimeout(-1, 'test')).toThrow(RangeError)
+  })
+
+  it('throws for NaN', () => {
+    expect(() => validateTimeout(NaN, 'test')).toThrow(RangeError)
+  })
+
+  it('throws for Infinity', () => {
+    expect(() => validateTimeout(Infinity, 'test')).toThrow(RangeError)
+  })
+
+  it('respects custom default', () => {
+    expect(validateTimeout(undefined, 'test', 15_000)).toBe(15_000)
+  })
+
+  it('includes label in error', () => {
+    expect(() => validateTimeout(-1, 'MyEngine')).toThrow('MyEngine')
   })
 })
 

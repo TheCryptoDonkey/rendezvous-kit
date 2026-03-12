@@ -214,3 +214,13 @@ describe('GraphHopperEngine', () => {
     })
   })
 })
+
+describe('GraphHopperEngine constructor validation', () => {
+  it('rejects non-http baseUrl', () => {
+    expect(() => new GraphHopperEngine({ baseUrl: 'ftp://evil.com' })).toThrow(TypeError)
+  })
+
+  it('throws for zero timeoutMs', () => {
+    expect(() => new GraphHopperEngine({ baseUrl: 'http://localhost:8989', timeoutMs: 0 })).toThrow(RangeError)
+  })
+})

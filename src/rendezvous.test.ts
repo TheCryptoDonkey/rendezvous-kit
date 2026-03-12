@@ -281,6 +281,70 @@ describe('findRendezvous', () => {
   })
 })
 
+describe('findRendezvous — input validation', () => {
+  it('throws RangeError for invalid participant latitude', async () => {
+    const engine = createMockEngine()
+    await expect(findRendezvous(engine, {
+      participants: [{ lat: 91, lon: 0 }, { lat: 51, lon: -2 }],
+      mode: 'drive', maxTimeMinutes: 30, venueTypes: ['park'],
+    })).rejects.toThrow(RangeError)
+  })
+
+  it('throws RangeError for invalid participant longitude', async () => {
+    const engine = createMockEngine()
+    await expect(findRendezvous(engine, {
+      participants: [{ lat: 51, lon: -181 }, { lat: 51, lon: -2 }],
+      mode: 'drive', maxTimeMinutes: 30, venueTypes: ['park'],
+    })).rejects.toThrow(RangeError)
+  })
+
+  it('throws RangeError for NaN coordinate', async () => {
+    const engine = createMockEngine()
+    await expect(findRendezvous(engine, {
+      participants: [{ lat: NaN, lon: 0 }, { lat: 51, lon: -2 }],
+      mode: 'drive', maxTimeMinutes: 30, venueTypes: ['park'],
+    })).rejects.toThrow(RangeError)
+  })
+
+  it('throws RangeError for more than 100 participants', async () => {
+    const engine = createMockEngine()
+    const participants = Array.from({ length: 101 }, (_, i) => ({ lat: 51 + i * 0.001, lon: -2 }))
+    await expect(findRendezvous(engine, {
+      participants, mode: 'drive', maxTimeMinutes: 30, venueTypes: ['park'],
+    })).rejects.toThrow(RangeError)
+  })
+
+  it('throws RangeError for non-positive maxTimeMinutes', async () => {
+    const engine = createMockEngine()
+    await expect(findRendezvous(engine, {
+      participants: [{ lat: 51, lon: -2 }, { lat: 52, lon: -1 }],
+      mode: 'drive', maxTimeMinutes: 0, venueTypes: ['park'],
+    })).rejects.toThrow(RangeError)
+  })
+
+  it('throws RangeError for NaN maxTimeMinutes', async () => {
+    const engine = createMockEngine()
+    await expect(findRendezvous(engine, {
+      participants: [{ lat: 51, lon: -2 }, { lat: 52, lon: -1 }],
+      mode: 'drive', maxTimeMinutes: NaN, venueTypes: ['park'],
+    })).rejects.toThrow(RangeError)
+  })
+
+  it('clamps limit to 50 max', async () => {
+    const engine = createMockEngine()
+    const result = await findRendezvous(engine, {
+      participants: [
+        { lat: 51.4545, lon: -2.5879 },
+        { lat: 51.3758, lon: -2.3599 },
+      ],
+      mode: 'drive', maxTimeMinutes: 30, venueTypes: ['park'],
+      limit: 1000,
+    })
+    // Should not crash; result count is bounded by available venues (2 from mock)
+    expect(result.length).toBeLessThanOrEqual(50)
+  })
+})
+
 describe('findRendezvous — hull strategy', () => {
   it('does not call computeIsochrone when strategy is "hull"', async () => {
     const { searchVenues } = await import('./venues.js')

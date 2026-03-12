@@ -188,3 +188,17 @@ describe('OsrmEngine', () => {
     })
   })
 })
+
+describe('OsrmEngine constructor validation', () => {
+  it('rejects non-http baseUrl', () => {
+    expect(() => new OsrmEngine({ baseUrl: 'ftp://evil.com' })).toThrow(TypeError)
+  })
+
+  it('throws for zero timeoutMs', () => {
+    expect(() => new OsrmEngine({ baseUrl: 'http://localhost:5000', timeoutMs: 0 })).toThrow(RangeError)
+  })
+
+  it('throws for negative timeoutMs', () => {
+    expect(() => new OsrmEngine({ baseUrl: 'http://localhost:5000', timeoutMs: -1 })).toThrow(RangeError)
+  })
+})

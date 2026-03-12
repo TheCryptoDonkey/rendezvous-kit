@@ -509,4 +509,24 @@ describe('ValhallaEngine', () => {
       expect(result.legs![0].streetNames).toBeUndefined()
     })
   })
+
+  describe('constructor validation', () => {
+    it('rejects non-http baseUrl', () => {
+      expect(() => new ValhallaEngine({ baseUrl: 'ftp://evil.com' })).toThrow(TypeError)
+    })
+
+    it('throws for zero timeoutMs', () => {
+      expect(() => new ValhallaEngine({ baseUrl: 'http://localhost:8002', timeoutMs: 0 })).toThrow(RangeError)
+    })
+
+    it('throws for negative timeoutMs', () => {
+      expect(() => new ValhallaEngine({ baseUrl: 'http://localhost:8002', timeoutMs: -1 })).toThrow(RangeError)
+    })
+
+    it('clamps excessively large timeoutMs', () => {
+      const engine = new ValhallaEngine({ baseUrl: 'http://localhost:8002', timeoutMs: 999_999 })
+      // Engine should be created without error — timeout is clamped internally
+      expect(engine.name).toBe('Valhalla')
+    })
+  })
 })

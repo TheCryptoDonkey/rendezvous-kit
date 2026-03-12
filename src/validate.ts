@@ -12,6 +12,15 @@ export function validateHttpUrl(url: string, label: string): string {
   return url.replace(/\/$/, '')
 }
 
+/** Validate and clamp a timeout value in milliseconds. Returns clamped value (1000–120000). */
+export function validateTimeout(ms: number | undefined, label: string, defaultMs = 30_000): number {
+  const val = ms ?? defaultMs
+  if (!Number.isFinite(val) || val <= 0) {
+    throw new RangeError(`${label}: timeoutMs must be a positive finite number, got ${val}`)
+  }
+  return Math.max(1_000, Math.min(120_000, Math.round(val)))
+}
+
 /** Truncate a string for use in error messages. */
 export function truncateBody(text: string, maxLen = 200): string {
   return text.length > maxLen ? text.slice(0, maxLen) + '…' : text

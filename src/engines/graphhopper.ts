@@ -2,7 +2,7 @@ import type {
   RoutingEngine, Isochrone, RouteMatrix, RouteGeometry, MatrixEntry,
   TransportMode, LatLon, GeoJSONPolygon,
 } from '../types.js'
-import { validateHttpUrl, safeJson, truncateBody } from '../validate.js'
+import { validateHttpUrl, validateTimeout, safeJson, truncateBody } from '../validate.js'
 
 const PROFILE: Record<TransportMode, string> = {
   drive: 'car',
@@ -35,7 +35,7 @@ export class GraphHopperEngine implements RoutingEngine {
   constructor(config: { baseUrl: string; apiKey?: string; timeoutMs?: number }) {
     this.baseUrl = validateHttpUrl(config.baseUrl, 'GraphHopperEngine baseUrl')
     this.apiKey = config.apiKey
-    this.timeoutMs = config.timeoutMs ?? 30_000
+    this.timeoutMs = validateTimeout(config.timeoutMs, 'GraphHopperEngine')
   }
 
   private params(extra: Record<string, string>): string {
