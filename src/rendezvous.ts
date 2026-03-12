@@ -41,6 +41,9 @@ export async function findRendezvous(
   if (!Number.isFinite(maxTimeMinutes) || maxTimeMinutes <= 0) {
     throw new RangeError(`Invalid maxTimeMinutes: ${maxTimeMinutes}`)
   }
+  if (maxTimeMinutes > 1440) {
+    throw new RangeError(`maxTimeMinutes exceeds 24-hour cap: ${maxTimeMinutes}`)
+  }
 
   // Resolve pipeline strategy
   const strategy = requestedStrategy === 'auto'

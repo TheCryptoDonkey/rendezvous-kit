@@ -330,6 +330,14 @@ describe('findRendezvous — input validation', () => {
     })).rejects.toThrow(RangeError)
   })
 
+  it('throws RangeError for maxTimeMinutes over 24 hours', async () => {
+    const engine = createMockEngine()
+    await expect(findRendezvous(engine, {
+      participants: [{ lat: 51, lon: -2 }, { lat: 52, lon: -1 }],
+      mode: 'drive', maxTimeMinutes: 1441, venueTypes: ['park'],
+    })).rejects.toThrow(RangeError)
+  })
+
   it('clamps limit to 50 max', async () => {
     const engine = createMockEngine()
     const result = await findRendezvous(engine, {
