@@ -209,6 +209,21 @@ class MyEngine implements RoutingEngine {
 }
 ```
 
+## Examples
+
+Runnable examples in [`examples/`](./examples/):
+
+- **[basic-usage.ts](./examples/basic-usage.ts)** — find a fair meeting point for three people
+- **[comparing-fairness-strategies.ts](./examples/comparing-fairness-strategies.ts)** — see how min_max, min_total, and min_variance rank differently
+- **[custom-engine.ts](./examples/custom-engine.ts)** — implement the RoutingEngine interface with a mock engine
+
+Run any example with `npx tsx examples/<name>.ts`.
+
+## Guides
+
+- **[Choosing a Fairness Strategy](./docs/choosing-a-fairness-strategy.md)** — when to use min_max vs min_total vs min_variance
+- **[Self-Hosting a Routing Engine](./docs/self-hosting-a-routing-engine.md)** — run Valhalla, OSRM, or GraphHopper locally with Docker
+
 ## Companion Library
 
 **geohash-kit** — spatial primitives (pointInPolygon, GeoJSON types, distance utilities) used internally by rendezvous-kit.
