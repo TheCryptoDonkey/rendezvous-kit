@@ -1,3 +1,10 @@
+## [1.21.4](https://github.com/forgesworn/rendezvous-kit/compare/v1.21.3...v1.21.4) (2026-03-18)
+
+
+### Bug Fixes
+
+* restore version to 1.21.3 after tag misalignment from repo transfer ([63be3ea](https://github.com/forgesworn/rendezvous-kit/commit/63be3ea70ed87b61e7077ecc21920fbac2b9411f))
+
 # [1.10.0](https://github.com/forgesworn/rendezvous-kit/compare/v1.9.0...v1.10.0) (2026-03-18)
 
 
