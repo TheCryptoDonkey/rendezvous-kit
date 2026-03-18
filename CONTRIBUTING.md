@@ -5,7 +5,7 @@ Thanks for your interest in contributing! This document covers the workflow and 
 ## Getting Started
 
 ```bash
-git clone https://github.com/TheCryptoDonkey/rendezvous-kit.git
+git clone https://github.com/forgesworn/rendezvous-kit.git
 cd rendezvous-kit
 npm install
 npm test
@@ -56,4 +56,4 @@ Tests use [Vitest](https://vitest.dev/). Place test files alongside source files
 
 ## Questions?
 
-Open a [GitHub Issue](https://github.com/TheCryptoDonkey/rendezvous-kit/issues) — we're happy to help.
+Open a [GitHub Issue](https://github.com/forgesworn/rendezvous-kit/issues) — we're happy to help.

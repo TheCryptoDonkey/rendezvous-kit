@@ -3,11 +3,11 @@
 **Find fair meeting points for N people — isochrone intersection, venue search, and fairness scoring.**
 
 [![npm](https://img.shields.io/npm/v/rendezvous-kit)](https://www.npmjs.com/package/rendezvous-kit)
-[![licence](https://img.shields.io/npm/l/rendezvous-kit)](https://github.com/TheCryptoDonkey/rendezvous-kit/blob/main/LICENSE)
+[![licence](https://img.shields.io/npm/l/rendezvous-kit)](https://github.com/forgesworn/rendezvous-kit/blob/main/LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-native-blue)
 [![Nostr](https://img.shields.io/badge/Nostr-Zap%20me-purple)](https://primal.net/p/npub1mgvlrnf5hm9yf0n5mf9nqmvarhvxkc6remu5ec3vf8r0txqkuk7su0e7q2)
 
-**[Live Demo →](https://thecryptodonkey.github.io/rendezvous-kit)**
+**[Live Demo →](https://forgesworn.github.io/rendezvous-kit)**
 
 ### How it works
 
@@ -229,7 +229,7 @@ Run any example with `npx tsx examples/<name>.ts`.
 **geohash-kit** — spatial primitives (pointInPolygon, GeoJSON types, distance utilities) used internally by rendezvous-kit.
 
 - npm: [`geohash-kit`](https://www.npmjs.com/package/geohash-kit)
-- GitHub: [`TheCryptoDonkey/geohash-kit`](https://github.com/TheCryptoDonkey/geohash-kit)
+- GitHub: [`forgesworn/geohash-kit`](https://github.com/forgesworn/geohash-kit)
 
 ## For AI Assistants
 
@@ -254,11 +254,11 @@ OSRM cannot generate isochrones. Use Valhalla, OpenRouteService, or GraphHopper 
 
 ## Licence
 
-[MIT](https://github.com/TheCryptoDonkey/rendezvous-kit/blob/main/LICENSE)
+[MIT](https://github.com/forgesworn/rendezvous-kit/blob/main/LICENSE)
 
 ## Support
 
-For issues and feature requests, see [GitHub Issues](https://github.com/TheCryptoDonkey/rendezvous-kit/issues).
+For issues and feature requests, see [GitHub Issues](https://github.com/forgesworn/rendezvous-kit/issues).
 
 If you find rendezvous-kit useful, consider sending a tip:
 

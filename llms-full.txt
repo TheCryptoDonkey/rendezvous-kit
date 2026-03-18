@@ -4,7 +4,7 @@
 
 One runtime dependency: geohash-kit. Zero third-party dependencies. ESM-only.
 
-Repository: https://github.com/TheCryptoDonkey/rendezvous-kit
+Repository: https://github.com/forgesworn/rendezvous-kit
 Licence: MIT
 
 ## Install
@@ -477,5 +477,5 @@ const suggestions = await findRendezvous(new MyRoutingEngine(), options)
 
 **geohash-kit** — spatial primitives used internally by rendezvous-kit.
 
-- Repository: https://github.com/TheCryptoDonkey/geohash-kit
+- Repository: https://github.com/forgesworn/geohash-kit
 - npm: geohash-kit

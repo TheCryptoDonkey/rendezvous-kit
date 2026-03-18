@@ -4,7 +4,7 @@
 
 One runtime dependency: geohash-kit. Zero third-party dependencies. ESM-only. Five subpath exports.
 
-Repository: https://github.com/TheCryptoDonkey/rendezvous-kit
+Repository: https://github.com/forgesworn/rendezvous-kit
 
 ## Install
 
