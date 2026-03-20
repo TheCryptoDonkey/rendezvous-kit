@@ -1,3 +1,10 @@
+## [1.21.5](https://github.com/forgesworn/rendezvous-kit/compare/v1.21.4...v1.21.5) (2026-03-20)
+
+
+### Bug Fixes
+
+* correct copyright to TheCryptoDonkey ([9f99144](https://github.com/forgesworn/rendezvous-kit/commit/9f99144a71a88c18f39bd3249baaab2acbed4445))
+
 ## [1.21.4](https://github.com/forgesworn/rendezvous-kit/compare/v1.21.3...v1.21.4) (2026-03-18)
 
 
