@@ -1,5 +1,7 @@
 # rendezvous-kit
 
+**Nostr:** [`npub1mgvlrnf5hm9yf0n5mf9nqmvarhvxkc6remu5ec3vf8r0txqkuk7su0e7q2`](https://njump.me/npub1mgvlrnf5hm9yf0n5mf9nqmvarhvxkc6remu5ec3vf8r0txqkuk7su0e7q2)
+
 **Find fair meeting points for N people — isochrone intersection, venue search, and fairness scoring.**
 
 [![npm](https://img.shields.io/npm/v/rendezvous-kit)](https://www.npmjs.com/package/rendezvous-kit)
